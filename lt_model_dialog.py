@@ -63,6 +63,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         self.runButton.clicked.connect(self.run)
         self.inputButton.clicked.connect(self.showOpenDialog)
         self.outputButton.clicked.connect(self.showSaveDialog)
+        self.gaussianCheckBox.clicked.connect(self.change_input)
 
 
     def get_Cw(self):
@@ -182,6 +183,8 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
             iface.addRasterLayer(outFileName, baseName)
         self.close()
 
+    def change_input(self):
+        self.inputLineEdit.setText('non-georeferenced Gaussian bump')
         
     def showOpenDialog(self):
         fileName = str(QtGui.QFileDialog.getOpenFileName(self,

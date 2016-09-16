@@ -120,16 +120,16 @@ class ReadRaster(object):
         self.file_name = file_name
         try:
             print("\n  opening file %s" % file_name)
-            self.ds = gdal.Open(file_name)
+            ds = gdal.Open(file_name)
         except:
             print("  could not open file %s" % file_name)
 
-        self.RasterArray = self.ds.ReadAsArray()
-        self.projection = self.ds.GetProjection()
+        self.RasterArray = ds.ReadAsArray()
+        self.projection = ds.GetProjection()
 
-        geoT = self.ds.GetGeoTransform()
-        pxwidth = self.ds.RasterXSize
-        pxheight = self.ds.RasterYSize
+        geoT = ds.GetGeoTransform()
+        pxwidth = ds.RasterXSize
+        pxheight = ds.RasterYSize
         ulx = geoT[0]
         uly = geoT[3]
         rezX = geoT[1]
