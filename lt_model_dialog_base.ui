@@ -6,48 +6,32 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>300</height>
+    <width>652</width>
+    <height>693</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Linear Theory Orogrpahy Precipitation Model</string>
+   <string>Linear Theory Orographic Precipitation Model</string>
   </property>
-  <widget class="QDialogButtonBox" name="button_box">
-   <property name="geometry">
-    <rect>
-     <x>30</x>
-     <y>240</y>
-     <width>341</width>
-     <height>32</height>
-    </rect>
-   </property>
-   <property name="orientation">
-    <enum>Qt::Horizontal</enum>
-   </property>
-   <property name="standardButtons">
-    <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label">
+  <widget class="QLabel" name="input_raster_text">
    <property name="geometry">
     <rect>
      <x>20</x>
      <y>10</y>
-     <width>56</width>
-     <height>13</height>
+     <width>81</width>
+     <height>16</height>
     </rect>
    </property>
    <property name="text">
-    <string>DEM</string>
+    <string>Input Raster</string>
    </property>
   </widget>
   <widget class="Line" name="line">
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>60</y>
-     <width>361</width>
+     <y>90</y>
+     <width>581</width>
      <height>16</height>
     </rect>
    </property>
@@ -59,7 +43,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>80</y>
+     <y>120</y>
      <width>91</width>
      <height>16</height>
     </rect>
@@ -68,12 +52,12 @@
     <string>Parameters</string>
    </property>
   </widget>
-  <widget class="QLineEdit" name="lineEdit">
+  <widget class="QLineEdit" name="wind_direction">
    <property name="geometry">
     <rect>
      <x>280</x>
-     <y>120</y>
-     <width>113</width>
+     <y>160</y>
+     <width>151</width>
      <height>21</height>
     </rect>
    </property>
@@ -81,24 +65,24 @@
     <string>270</string>
    </property>
   </widget>
-  <widget class="QLabel" name="label_3">
-   <property name="geometry">
-    <rect>
-     <x>20</x>
-     <y>130</y>
-     <width>161</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Wind Direction (0 = north)</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_4">
+  <widget class="QLabel" name="wind_direction_text">
    <property name="geometry">
     <rect>
      <x>20</x>
      <y>160</y>
+     <width>251</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Wind Direction (0 = north, 270 = west)</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="wind_speed_text">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>190</y>
      <width>141</width>
      <height>16</height>
     </rect>
@@ -107,12 +91,12 @@
     <string>Wind Speed (m/s)</string>
    </property>
   </widget>
-  <widget class="QLineEdit" name="lineEdit_2">
+  <widget class="QLineEdit" name="wind_speed">
    <property name="geometry">
     <rect>
      <x>280</x>
-     <y>150</y>
-     <width>113</width>
+     <y>190</y>
+     <width>151</width>
      <height>21</height>
     </rect>
    </property>
@@ -123,8 +107,8 @@
   <widget class="QPushButton" name="pushButton">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>30</y>
+     <x>110</x>
+     <y>0</y>
      <width>351</width>
      <height>32</height>
     </rect>
@@ -133,24 +117,24 @@
     <string>Select DEM</string>
    </property>
   </widget>
-  <widget class="QLineEdit" name="lineEdit_3">
+  <widget class="QLineEdit" name="Nm">
    <property name="geometry">
     <rect>
      <x>280</x>
-     <y>180</y>
-     <width>113</width>
+     <y>220</y>
+     <width>151</width>
      <height>21</height>
     </rect>
    </property>
    <property name="text">
-    <string>15</string>
+    <string>0.005</string>
    </property>
   </widget>
-  <widget class="QLabel" name="label_5">
+  <widget class="QLabel" name="Nm_text">
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>190</y>
+     <y>220</y>
      <width>231</width>
      <height>16</height>
     </rect>
@@ -159,40 +143,280 @@
     <string>Moist Stability Frequency Nm (s-1)</string>
    </property>
   </widget>
+  <widget class="QLineEdit" name="tau_c">
+   <property name="geometry">
+    <rect>
+     <x>280</x>
+     <y>250</y>
+     <width>151</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>1000</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="tau_f">
+   <property name="geometry">
+    <rect>
+     <x>280</x>
+     <y>280</y>
+     <width>151</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>1000</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="tau_c_text">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>250</y>
+     <width>231</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Conversion Time tau_c (s)</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="tau_f_text">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>280</y>
+     <width>231</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Fallout Time tau_f (s)</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="Cw">
+   <property name="geometry">
+    <rect>
+     <x>280</x>
+     <y>310</y>
+     <width>151</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>0.008293103448275862</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="Cw_text">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>310</y>
+     <width>231</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Uplift Sensitivity Factor Cw (kg m-3)</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="latitude">
+   <property name="geometry">
+    <rect>
+     <x>280</x>
+     <y>370</y>
+     <width>151</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>0</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="latitude_text">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>370</y>
+     <width>231</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Latitude</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="output_raster_text">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>70</y>
+     <width>81</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Output Raster</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="pushButton_2">
+   <property name="geometry">
+    <rect>
+     <x>110</x>
+     <y>60</y>
+     <width>351</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Select DEM</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="P0_text">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>400</y>
+     <width>231</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Background Precipitation (mm hr-1)</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="P0">
+   <property name="geometry">
+    <rect>
+     <x>280</x>
+     <y>400</y>
+     <width>151</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>0</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="P_scale">
+   <property name="geometry">
+    <rect>
+     <x>280</x>
+     <y>430</y>
+     <width>151</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>1</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="P_scale_text">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>430</y>
+     <width>231</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Precipitation Scale Factor (1)</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="P_scale_text_2">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>470</y>
+     <width>231</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Truncate</string>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="truncate">
+   <property name="geometry">
+    <rect>
+     <x>280</x>
+     <y>470</y>
+     <width>85</width>
+     <height>18</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QLabel" name="Hw_text">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>340</y>
+     <width>231</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Vapor Scale Height Hw (m)</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="Hw">
+   <property name="geometry">
+    <rect>
+     <x>280</x>
+     <y>340</y>
+     <width>151</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>2500</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="input_raster_text_2">
+   <property name="geometry">
+    <rect>
+     <x>120</x>
+     <y>30</y>
+     <width>331</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>If no raster is given, a Gaussian bump is assumed</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="button_run">
+   <property name="geometry">
+    <rect>
+     <x>380</x>
+     <y>560</y>
+     <width>110</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Run</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="button_close">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>560</y>
+     <width>110</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Close</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
- <connections>
-  <connection>
-   <sender>button_box</sender>
-   <signal>accepted()</signal>
-   <receiver>LinearTheoryOrographicPrecipitationDialogBase</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>button_box</sender>
-   <signal>rejected()</signal>
-   <receiver>LinearTheoryOrographicPrecipitationDialogBase</receiver>
-   <slot>reject()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

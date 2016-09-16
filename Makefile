@@ -1,9 +1,9 @@
 #/***************************************************************************
 # LinearTheoryOrographicPrecipitation
 #
-# Implements the Smith and Barstad (2004) Model
+# Implements the Smith & Barstad (2004) LT model
 #							 -------------------
-#		begin				: 2016-09-05
+#		begin				: 2016-09-15
 #		git sha				: $Format:%H$
 #		copyright			: (C) 2016 by Andy Aschwanden
 #		email				: andy.aschwanden@gmail.com
@@ -44,11 +44,12 @@ PLUGINNAME = LinearTheoryOrographicPrecipitation
 
 PY_FILES = \
 	__init__.py \
-	lt_model.py lt_model_dialog.py
+	lt_model.py lt_model_dialog.py \
+	linear_orog_precip.py
 
 UI_FILES = lt_model_dialog_base.ui
 
-EXTRAS = metadata.txt icon.png
+EXTRAS = metadata.txt icon.png olympics_500m.tif
 
 COMPILED_RESOURCE_FILES = resources.py
 

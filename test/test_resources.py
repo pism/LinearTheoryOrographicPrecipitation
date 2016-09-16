@@ -9,7 +9,7 @@
 """
 
 __author__ = 'andy.aschwanden@gmail.com'
-__date__ = '2016-09-05'
+__date__ = '2016-09-15'
 __copyright__ = 'Copyright 2016, Andy Aschwanden'
 
 import unittest

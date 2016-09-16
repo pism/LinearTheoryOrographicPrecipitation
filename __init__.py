@@ -3,9 +3,9 @@
 /***************************************************************************
  LinearTheoryOrographicPrecipitation
                                  A QGIS plugin
- Implements the Smith and Barstad (2004) Model
+ Implements the Smith & Barstad (2004) LT model
                              -------------------
-        begin                : 2016-09-05
+        begin                : 2016-09-15
         copyright            : (C) 2016 by Andy Aschwanden
         email                : andy.aschwanden@gmail.com
         git sha              : $Format:%H$

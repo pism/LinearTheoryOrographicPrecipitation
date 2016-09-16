@@ -7,17 +7,17 @@
 # This file should be included when you package your plugin.# Mandatory items:
 
 [general]
-name=Linear Theory Orogrpahy Precipitation Model
+name=Linear Theory of Orographic Precipitaion Model
 qgisMinimumVersion=2.0
-description=Implements the Smith and Barstad (2004) Model
+description=Implements the Smith & Barstad (2004) LT model
 version=0.1
 author=Andy Aschwanden
 email=andy.aschwanden@gmail.com
 
-about=Implements the Linear Theory of Orographic Precipitation Model by Smith & Barstad (2004).
+about=Smith and Barstad (2004) LT model.
 
-tracker=www.github.com
-repository=www.githum.com
+tracker=https://github.com/aaschwanden/LinearTheoryOrographicPrecipitation/issues
+repository=https://github.com/aaschwanden/LinearTheoryOrographicPrecipitation
 # End of mandatory metadata
 
 # Recommended items:
@@ -28,7 +28,7 @@ repository=www.githum.com
 # Tags are comma separated with spaces allowed
 tags=
 
-homepage=
+homepage=https://github.com/aaschwanden/LinearTheoryOrographicPrecipitation
 category=Plugins
 icon=icon.png
 # experimental flag

@@ -3,9 +3,9 @@
 /***************************************************************************
  LinearTheoryOrographicPrecipitation
                                  A QGIS plugin
- Implements the Smith and Barstad (2004) Model
+ Implements the Smith & Barstad (2004) LT model
                               -------------------
-        begin                : 2016-09-05
+        begin                : 2016-09-15
         git sha              : $Format:%H$
         copyright            : (C) 2016 by Andy Aschwanden
         email                : andy.aschwanden@gmail.com
@@ -63,7 +63,7 @@ class LinearTheoryOrographicPrecipitation:
 
         # Declare instance attributes
         self.actions = []
-        self.menu = self.tr(u'&Linear Theory Orogrpahy Precipitation Model')
+        self.menu = self.tr(u'&Linear Theory of Orographic Precipitaion Model')
         # TODO: We are going to let the user set this up in a future iteration
         self.toolbar = self.iface.addToolBar(u'LinearTheoryOrographicPrecipitation')
         self.toolbar.setObjectName(u'LinearTheoryOrographicPrecipitation')
@@ -163,7 +163,7 @@ class LinearTheoryOrographicPrecipitation:
         icon_path = ':/plugins/LinearTheoryOrographicPrecipitation/icon.png'
         self.add_action(
             icon_path,
-            text=self.tr(u'Orographic Precipitation'),
+            text=self.tr(u'LT Model'),
             callback=self.run,
             parent=self.iface.mainWindow())
 
@@ -172,7 +172,7 @@ class LinearTheoryOrographicPrecipitation:
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
             self.iface.removePluginMenu(
-                self.tr(u'&Linear Theory Orogrpahy Precipitation Model'),
+                self.tr(u'&Linear Theory of Orographic Precipitaion Model'),
                 action)
             self.iface.removeToolBarIcon(action)
         # remove the toolbar
