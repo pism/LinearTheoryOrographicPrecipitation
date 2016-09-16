@@ -145,16 +145,17 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         wind_direction = self.get_wind_direction()
         wind_speed = self.get_wind_speed()
         physical_constants = self.physical_constants
-        physical_constants['tau_c'] = tau_c      # conversion time [s]
-        physical_constants['tau_f'] = tau_f      # fallout time [s]
-        physical_constants['f'] = 2 * 7.2921e-5 * np.sin(latitude * np.pi / 180) # Coriolis force
-        physical_constants['Nm'] = Nm   # moist stability frequency [s-1]
-        physical_constants['Cw'] = Cw  # uplift sensitivity factor [kg m-3]
-        physical_constants['Hw'] = Hw  # vapor scale height (m)
-        physical_constants['u'] = -np.sin(wind_direction * 2 * np.pi / 360) * wind_speed  # x-component of wind vector [m s-1]
-        physical_constants['v'] = np.cos(wind_direction * 2 * np.pi / 360) * wind_speed   # y-component of wind vector [m s-1]
-        physical_constants['P0'] = P0   # background precip [mm hr-1]
-        physical_constants['P_scale'] = P_scale   # precip scale factor [1]
+        physical_constants['tau_c'] = tau_c
+        physical_constants['tau_f'] = tau_f
+        physical_constants['f'] = 2 * 7.2921e-5 * np.sin(latitude * np.pi / 180)
+        physical_constants['Nm'] = Nm
+        physical_constants['Cw'] = Cw
+        physical_constants['Hw'] = Hw
+        physical_constants['u'] = -np.sin(wind_direction * 2 * np.pi / 360) * wind_speed
+        physical_constants['v'] = np.cos(wind_direction * 2 * np.pi / 360) * wind_speed
+        physical_constants['P0'] = P0
+        physical_constants['P_scale'] = P_scale
+        
         inFileName = self.inFileName
         if self.gaussianCheckBox.isChecked():
             dx = dy = 750
