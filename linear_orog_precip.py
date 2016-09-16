@@ -105,7 +105,7 @@ class OrographicPrecipitation(object):
         return P
 
 
-class GdalFile(object):
+class ReadRaster(object):
 
     '''
     A class to read a GDAL File
@@ -150,7 +150,7 @@ class GdalFile(object):
         self.X, self.Y = np.meshgrid(self.easting, self.northing)
 
 
-def array2raster(newRasterfn, geoTrans, proj4, units, array):
+def saveRaster(newRasterfn, geoTrans, proj4, array):
     '''
     Function to export geo-coded raster
 
@@ -162,16 +162,10 @@ def array2raster(newRasterfn, geoTrans, proj4, units, array):
     cols = array.shape[1]
     rows = array.shape[0]
 
-    driver = gdal.GetDriverByName('netCDF')
-    print driver
-    print cols, rows
-    import os
-    print os.getcwd()
+    driver = gdal.GetDriverByName('GTiff')
     outRaster = driver.Create(newRasterfn, cols, rows, 1, gdal.GDT_Float32)
-    print outRaster
     outRaster.SetGeoTransform(geoTrans)
     outband = outRaster.GetRasterBand(1)
-    outband.SetMetadata('units', units)
     outband.WriteArray(array)
     outRasterSRS = osr.SpatialReference()
     outRasterSRS.ImportFromProj4(proj4)

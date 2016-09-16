@@ -63,7 +63,7 @@ class LinearTheoryOrographicPrecipitation:
 
         # Declare instance attributes
         self.actions = []
-        self.menu = self.tr(u'&Linear Theory of Orographic Precipitaion Model')
+        self.menu = self.tr(u'&LT Model')
         # TODO: We are going to let the user set this up in a future iteration
         self.toolbar = self.iface.addToolBar(u'LinearTheoryOrographicPrecipitation')
         self.toolbar.setObjectName(u'LinearTheoryOrographicPrecipitation')
@@ -163,7 +163,7 @@ class LinearTheoryOrographicPrecipitation:
         icon_path = ':/plugins/LinearTheoryOrographicPrecipitation/icon.png'
         self.add_action(
             icon_path,
-            text=self.tr(u'LT Model'),
+            text=self.tr(u'Linear Theory of Orographic Precipitation Model'),
             callback=self.run,
             parent=self.iface.mainWindow())
 
