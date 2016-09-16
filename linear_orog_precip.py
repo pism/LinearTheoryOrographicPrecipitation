@@ -163,7 +163,12 @@ def array2raster(newRasterfn, geoTrans, proj4, units, array):
     rows = array.shape[0]
 
     driver = gdal.GetDriverByName('netCDF')
+    print driver
+    print cols, rows
+    import os
+    print os.getcwd()
     outRaster = driver.Create(newRasterfn, cols, rows, 1, gdal.GDT_Float32)
+    print outRaster
     outRaster.SetGeoTransform(geoTrans)
     outband = outRaster.GetRasterBand(1)
     outband.SetMetadata('units', units)

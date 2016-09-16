@@ -25,7 +25,7 @@ import os
 
 from PyQt4 import QtGui, uic
 import numpy as np
-from linear_orog_precip import OrographicPrecipitation, array2raster, GdalFile
+from linear_orog_precip import OrographicPrecipitation, array2raster
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'lt_model_dialog_base.ui'))
@@ -40,8 +40,8 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         # self.<objectname>, and you can use autoconnect slots - see
         # http://qt-project.org/doc/qt-4.8/designer-using-a-ui-file.html
         # #widgets-and-dialogs-with-auto-connect
-        self.in_file = '/Users/andy/base/LinearOrographicPrecipitation/olympics_500m.tif'
-        self.out_file = 'foo.nc'
+        self.in_file = None
+        self.out_file = '/Users/andy/Desktop/foo.nc'
         self.setupUi(self)
         self.physical_constants = dict()
         self.connectSignals()
