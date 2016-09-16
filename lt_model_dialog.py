@@ -28,8 +28,8 @@ from PyQt4.QtCore import QFileInfo
 from qgis.utils import iface
 
 import numpy as np
-from osgeo import gdal
-from linear_orog_precip import OrographicPrecipitation, saveRaster, ReadRaster
+from osgeo import gdal, osr
+from linear_orog_precip import OrographicPrecipitation, saveRaster
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'lt_model_dialog_base.ui'))
@@ -64,7 +64,6 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         self.inputButton.clicked.connect(self.showOpenDialog)
         self.outputButton.clicked.connect(self.showSaveDialog)
         self.gaussianCheckBox.clicked.connect(self.change_input)
-
 
     def get_Cw(self):
         Cw = float(str(self.Cw.text()))
@@ -168,12 +167,12 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
             geoTrans = [0., dx, 0., 0., 0., -dy]
             proj4 = ''
         else:
-            gd = ReadRaster(inFileName)
-            X = gd.X
-            Y = gd.Y
-            Orography = gd.RasterArray
-            geoTrans = gd.geoTrans
-            proj4 = gd.proj4
+            self.readRaster()
+            X = self.X
+            Y = self.Y
+            Orography = self.RasterArray
+            geoTrans = self.geoTrans
+            proj4 = self.proj4
         OP = OrographicPrecipitation(X, Y, Orography, physical_constants, truncate=self.truncateCheckBox.isChecked())
         outFileName = self.outFileName
         saveRaster(outFileName, geoTrans, proj4, OP.P)
@@ -185,7 +184,8 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
 
     def change_input(self):
         self.inputLineEdit.setText('non-georeferenced Gaussian bump')
-        
+
+
     def showOpenDialog(self):
         fileName = str(QtGui.QFileDialog.getOpenFileName(self,
                                                         "Input Raster File:"))
@@ -340,3 +340,29 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
             self.runButton.setDisabled(False)
         self.outputLineEdit.clear()
         self.outputLineEdit.setText(self.outFileName)
+
+
+    def readRaster(self):
+        inFileName = self.inFileName
+        ds = gdal.Open(inFileName)
+
+        self.RasterArray = ds.ReadAsArray()
+        self.projection = ds.GetProjection()
+
+        geoTrans = ds.GetGeoTransform()
+        pxwidth = ds.RasterXSize
+        pxheight = ds.RasterYSize
+        ulx = geoTrans[0]
+        uly = geoTrans[3]
+        rezX = geoTrans[1]
+        rezY = geoTrans[5]
+        self.geoTrans = geoTrans
+        rx = ulx + pxwidth * rezX
+        ly = uly + pxheight * rezY
+        osr_ref = osr.SpatialReference()
+        osr_ref.ImportFromWkt(self.projection)
+        self.proj4 = osr_ref.ExportToProj4()
+
+        easting = np.arange(ulx, rx + rezX, rezX)
+        northing = np.arange(ly, uly - rezY, -rezY)
+        self.X, self.Y = np.meshgrid(easting, northing)
