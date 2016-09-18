@@ -27,12 +27,21 @@ from PyQt4 import QtGui, uic
 from PyQt4.QtCore import QFileInfo
 from qgis.utils import iface
 
+import re, math
 import numpy as np
 from osgeo import gdal, osr
 from linear_orog_precip import OrographicPrecipitation, saveRaster
 
+debug = True
+
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'lt_model_dialog_base.ui'))
+
+def num(s):
+    try:
+        return int(s)
+    except ValueError:
+        return float(s)
 
 
 class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
@@ -50,12 +59,16 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         self.connectSignals()
         self.inFileName = None
         self.outFileName = None
-
+        self.prefix = ''
+        self.variables = None
+        self.uri = None
+        self.isNetCDF = False
 
     def configUI(self):
         self.inputLineEdit.setReadOnly(True)
         self.outputLineEdit.setReadOnly(True)
         self.runButton.setDisabled(True)
+        self.timesComboBox.setDisabled(True)
 
 
     def connectSignals(self):
@@ -64,6 +77,24 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         self.inputButton.clicked.connect(self.showOpenDialog)
         self.outputButton.clicked.connect(self.showSaveDialog)
         self.gaussianCheckBox.clicked.connect(self.change_input)
+        self.varsComboBox.currentIndexChanged.connect(self.updateNetCDFVariable)
+
+    def clear(self):
+        # UPDATE ME
+        if debug>0:
+            print('clear')
+        self.ui.lblDim1.setText('     -     ')
+        self.ui.lblDim2.setText('     -     ')
+        self.ui.cboDim1.clear()
+        self.ui.cboDim2.clear()
+        self.ui.leBandSelection.clear()
+        if self.ui.pbnDim1.menu() is not None:
+            QObject.disconnect(self.ui.pbnDim1.menu(), SIGNAL("triggered(QAction *)"), self.on_pbnDimx_triggered)   
+            self.ui.pbnDim1.setMenu(None)
+        if self.ui.pbnDim2.menu() is not None:
+            QObject.disconnect(self.ui.pbnDim2.menu(), SIGNAL("triggered(QAction *)"), self.on_pbnDimx_triggered)   
+            self.ui.pbnDim2.setMenu(None)
+
 
     def get_Cw(self):
         Cw = float(str(self.Cw.text()))
@@ -131,6 +162,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         Orography = h_max * np.exp(-(((X-x0)**2/(2*sigma_x**2))+((Y-y0)**2/(2*sigma_y**2))))
         return X, Y, Orography
 
+
     def run(self):
 
         Cw = self.get_Cw()
@@ -182,11 +214,69 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
             iface.addRasterLayer(outFileName, baseName)
         self.close()
 
+    def updateURI(self):
+        if debug>0:
+            print('updateURI')
+        # update URI
+        fileInfo = QFileInfo(self.inFileName)
+        uri = 'NETCDF:"%s":%s' % (fileInfo.fileName(), self.varsComboBox.currentText())
+        self.uri = uri
+
     def change_input(self):
         self.inputLineEdit.setText('non-georeferenced Gaussian bump')
 
 
+    def updateFile(self):
+        # self.clear()
+        fileName = self.inFileName
+        if debug>0:
+            print('updateFile ' + fileName)
+        if fileName == '':
+            return
+
+        self.prefix = ''
+        self.variables = []
+
+        gdal.PushErrorHandler('CPLQuietErrorHandler')
+        ds = gdal.Open(fileName)
+        gdal.PopErrorHandler()
+        if ds is None:
+            return
+        if self.isNetCDF:
+            md = ds.GetMetadata("SUBDATASETS")
+            for key in sorted(md.iterkeys()):
+                #SUBDATASET_1_NAME=NETCDF:"file.nc":var
+                if re.match('^SUBDATASET_[0-9]+_NAME$', key) is None:
+                    continue
+                m = re.search('^(NETCDF:".+"):(.+)', md[key])
+                if m is None:
+                    continue
+                self.prefix = m.group(1)
+                self.variables.append(m.group(2))
+        else:
+            for band in range(ds.RasterCount):
+                band += 1
+                srcband = ds.GetRasterBand(band)
+                if srcband is None:
+                    continue
+                self.variables.append('Band {}'.format(band))
+
+        self.varsComboBox.blockSignals(True)
+        self.varsComboBox.clear()
+        for var in self.variables:
+            self.varsComboBox.addItem(var)
+        if self.isNetCDF:
+            if debug:
+                print 'update netCDFVariable'
+            self.updateNetCDFVariable()
+        self.varsComboBox.blockSignals(False)
+
+        if debug > 0:
+            print('done updateFile ' + fileName)
+
+
     def showOpenDialog(self):
+        self.timesComboBox.setDisabled(True)
         fileName = str(QtGui.QFileDialog.getOpenFileName(self,
                                                         "Input Raster File:"))
 
@@ -198,6 +288,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         gdal.AllRegister()
         dataset = gdal.Open(str(self.inFileName))
         self.rasterBands = dataset.RasterCount
+        print self.rasterBands
         dataset = None
 
 
@@ -206,6 +297,94 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
 
         self.inputLineEdit.clear()
         self.inputLineEdit.setText(self.inFileName)
+        inFileNameSuffix  = QFileInfo(self.inFileName).suffix()
+        if inFileNameSuffix in ('nc', 'nc3', 'nc4'):
+            self.isNetCDF = True
+        self.updateFile()
+        self.timesComboBox.setDisabled(False)
+
+
+    def updateNetCDFVariable(self):
+        dim_map = dict()
+        self.dim_names = []
+        self.dim_values = dict()
+        self.dim_values2 = dict()
+        self.dim_def = dict()
+        self.dim_band = dict()
+        # self.clear()
+        uri = 'NETCDF:"%s":%s' % (self.inFileName, self.varsComboBox.currentText())
+
+        if debug>0:
+            print('updateVariable ' + str(uri))
+
+        #look for extra dim definitions
+        #  NETCDF_DIM_EXTRA={time,tile}
+        #  NETCDF_DIM_tile_DEF={3,6}
+        #  NETCDF_DIM_tile_VALUES={1,2,3}
+        #  NETCDF_DIM_time_DEF={12,6}
+        #  NETCDF_DIM_time_VALUES={1,32,60,91,121,152,182,213,244,274,305,335}
+
+        gdal.PushErrorHandler('CPLQuietErrorHandler')
+        ds = gdal.Open(uri)
+        gdal.PopErrorHandler()
+        if ds is None:
+            return
+        md = ds.GetMetadata()
+        if md is None:
+            return
+
+        for key in sorted(md.iterkeys()):
+            if key.startswith('NETCDF_DIM_'):
+                line="%s=%s" % (key, md[key])
+                m = re.search('^(NETCDF_DIM_.+)={(.+)}', line)
+                if m is not None:
+                    dim_map[ m.group(1) ] = m.group(2)
+
+        if not 'NETCDF_DIM_EXTRA' in dim_map:
+            self.warning()
+            return
+        
+        tok = dim_map['NETCDF_DIM_EXTRA']
+        if debug:
+            print tok
+        if tok is not None:
+            for dim in tok.split(','):
+                self.dim_names.append( dim )
+                tok2 = dim_map.get('NETCDF_DIM_' + dim + '_VALUES')
+                self.dim_values[dim] = []
+                if tok2 is not None:
+                    for s in tok2.split(','):
+                        self.dim_values[dim].append(num(s))
+                tok2 = dim_map.get('NETCDF_DIM_' + dim + '_DEF')
+                self.dim_def[ dim ] = []
+                if tok2 is not None:
+                    for s in tok2.split(','):
+                        self.dim_def[ dim ].append(num(s))
+
+        # remove any dims which have only 1 element
+        dim_names = self.dim_names
+        self.dim_names = []
+        for dim in dim_names:
+            if self.dim_def[dim][0] <= 1:
+                del self.dim_values[dim]
+                del self.dim_def[dim]
+            else:
+                self.dim_names.append(dim)
+        print self.dim_names, self.dim_values
+        self.updateNetCDFTime()
+
+
+    def updateNetCDFTime(self):
+        self.timesComboBox.blockSignals(True)
+        self.timesComboBox.clear()
+        self.dim_values['time']
+        for k, item  in enumerate(self.dim_values['time']):
+            self.timesComboBox.addItem('time {}: {}'.format(k, item))
+        self.timesComboBox.blockSignals(False)
+
+        if debug>0:
+            print('done updateNetCDFTime ' + str(item))
+            print self.uri
 
 
     def showSaveDialog(self):
