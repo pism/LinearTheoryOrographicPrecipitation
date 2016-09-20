@@ -30,9 +30,11 @@ from qgis.utils import iface
 import re, math
 import numpy as np
 from osgeo import gdal, osr
+from netcdftime import utime
 from linear_orog_precip import OrographicPrecipitation, saveRaster
 
 debug = True
+_units = ['days', 'hours', 'minutes', 'seconds', 'day', 'hour', 'minute', 'second']
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'lt_model_dialog_base.ui'))
@@ -63,6 +65,8 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         self.variables = None
         self.uri = None
         self.isNetCDF = False
+        self.rasterBand = None
+        self.netCDFVariable = None
 
     def configUI(self):
         self.inputLineEdit.setReadOnly(True)
@@ -77,7 +81,15 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         self.inputButton.clicked.connect(self.showOpenDialog)
         self.outputButton.clicked.connect(self.showSaveDialog)
         self.gaussianCheckBox.clicked.connect(self.change_input)
-        self.varsComboBox.currentIndexChanged.connect(self.updateNetCDFVariable)
+        self.varsComboBox.currentIndexChanged.connect(self.update_variable)
+
+
+    def update_variable(self):
+        if self.isNetCDF:
+            self.updateNetCDFVariable()
+        else:
+            self.updateRasterBand()
+
 
     def clear(self):
         # UPDATE ME
@@ -222,6 +234,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         uri = 'NETCDF:"%s":%s' % (fileInfo.fileName(), self.varsComboBox.currentText())
         self.uri = uri
 
+
     def change_input(self):
         self.inputLineEdit.setText('non-georeferenced Gaussian bump')
 
@@ -269,6 +282,8 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
             if debug:
                 print 'update netCDFVariable'
             self.updateNetCDFVariable()
+        else:
+            self.updateRasterBand()    
         self.varsComboBox.blockSignals(False)
 
         if debug > 0:
@@ -288,9 +303,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         gdal.AllRegister()
         dataset = gdal.Open(str(self.inFileName))
         self.rasterBands = dataset.RasterCount
-        print self.rasterBands
         dataset = None
-
 
         if self.inFileName is not None and self.outFileName is not None:
             self.runButton.setDisabled(False)
@@ -304,7 +317,14 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         self.timesComboBox.setDisabled(False)
 
 
+    def updateRasterBand(self):
+        fullBandName = self.varsComboBox.currentText()
+        rasterBand = num(fullBandName.split('Band ')[1])
+        self.rasterBand = rasterBand
+
+
     def updateNetCDFVariable(self):
+        self.netCDFVariable =  self.varsComboBox.currentText()
         dim_map = dict()
         self.dim_names = []
         self.dim_values = dict()
@@ -312,7 +332,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         self.dim_def = dict()
         self.dim_band = dict()
         # self.clear()
-        uri = 'NETCDF:"%s":%s' % (self.inFileName, self.varsComboBox.currentText())
+        uri = 'NETCDF:"%s":%s' % (self.inFileName, self.netCDFVariable)
 
         if debug>0:
             print('updateVariable ' + str(uri))
@@ -338,7 +358,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
                 line="%s=%s" % (key, md[key])
                 m = re.search('^(NETCDF_DIM_.+)={(.+)}', line)
                 if m is not None:
-                    dim_map[ m.group(1) ] = m.group(2)
+                    dim_map[m.group(1)] = m.group(2)
 
         if not 'NETCDF_DIM_EXTRA' in dim_map:
             self.warning()
@@ -373,6 +393,38 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         print self.dim_names, self.dim_values
         self.updateNetCDFTime()
 
+        for dim in dim_names:
+            #dim+"#standard_name" in md and md[dim+"#standard_name"] == "time":
+            if dim in self.dim_values:
+                if (dim + "#units") in md:
+                    timestr = md[dim + "#units"]
+                    units = timestr.split()[0].lower()
+                    if (dim + #calendar) in md:
+                        calendar = md[dim + "#calendar"]
+                        cdftime = utime(timestr, calendar=calendar)
+                    if units in _units:
+                        try:
+                            dates = cdftime.num2date(self.dim_values[dim])
+                        except ValueError:
+                            continue
+                        self.dim_values2[dim] = []
+                        only_days = True
+                        for date in dates:
+                            val = date.strftime("%Y-%m-%d %H:%M:%S")
+                            if not val.endswith(" 00:00:00"):
+                                only_days = False
+                            self.dim_values2[ dim ].append(val)
+                        if only_days:
+                            for i in range(0,len(self.dim_values2[ dim ])):
+                                self.dim_values2[dim][i] = self.dim_values2[dim][i][0:10]
+
+        if debug>0:
+            print(str(dim_map))
+            print(str(self.dim_names))
+            print(str(self.dim_def))
+            print(str(self.dim_values))
+            print(str(self.dim_values2))
+        self.updateNetCDFTime()
 
     def updateNetCDFTime(self):
         self.timesComboBox.blockSignals(True)
@@ -524,8 +576,10 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
     def readRaster(self):
         inFileName = self.inFileName
         ds = gdal.Open(inFileName)
-
-        self.RasterArray = ds.ReadAsArray()
+        rasterBand = self.rasterBand
+        print rasterBand
+        rb = ds.GetRasterBand(rasterBand)
+        self.RasterArray = rb.ReadAsArray()
         self.projection = ds.GetProjection()
 
         geoTrans = ds.GetGeoTransform()
