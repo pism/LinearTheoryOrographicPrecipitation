@@ -41,6 +41,46 @@ _units = ['days', 'hours', 'minutes', 'seconds', 'day', 'hour', 'minute', 'secon
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'lt_model_dialog_base.ui'))
 
+
+def get_all_raster_drivers():
+    gdal.AllRegister()
+    raster_driver_dict = dict()
+    for no in range(gdal.GetDriverCount()):
+        driver = gdal.GetDriver(no)
+        driver_meta = driver.GetMetadata()
+        if 'DMD_EXTENSIONS' in driver_meta:
+            raster_driver_dict[driver.ShortName] = driver_meta['DMD_EXTENSIONS']
+    return raster_driver_dict
+
+
+def readMyRaster(uri, rasterBand):
+    gdal.AllRegister()
+    ds = gdal.Open(uri)
+    rb = ds.GetRasterBand(rasterBand)
+    RasterArray = rb.ReadAsArray()
+    projection = ds.GetProjection()
+
+    geoTrans = ds.GetGeoTransform()
+    pxwidth = ds.RasterXSize
+    pxheight = ds.RasterYSize
+    ulx = geoTrans[0]
+    uly = geoTrans[3]
+    rezX = geoTrans[1]
+    rezY = geoTrans[5]
+    geoTrans = geoTrans
+    rx = ulx + pxwidth * rezX
+    ly = uly + pxheight * rezY
+    osr_ref = osr.SpatialReference()
+    osr_ref.ImportFromWkt(projection)
+    proj4 = osr_ref.ExportToProj4()
+
+    easting = np.arange(ulx, rx + rezX, rezX)
+    northing = np.arange(ly, uly - rezY, -rezY)
+    X, Y = np.meshgrid(easting, northing)
+
+    return X, Y, RasterArray, geoTrans, proj4
+
+
 def num(s):
     try:
         return int(s)
@@ -142,12 +182,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
             geoTrans = [0., dx, 0., 0., 0., -dy]
             proj4 = ''
         else:
-            self.readRaster()
-            X = self.X
-            Y = self.Y
-            Orography = self.RasterArray
-            geoTrans = self.geoTrans
-            proj4 = self.proj4
+            X, Y, Orography, geoTrans, proj4 = readMyRaster(self.uri, self.rasterBand)
         OP = OrographicPrecipitation(X, Y, Orography, physical_constants, truncate=self.truncateCheckBox.isChecked())
         outFileName = self.outFileName
         saveRaster(outFileName, geoTrans, proj4, OP.P)
@@ -163,7 +198,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
             print('updateURI')
         # update URI
         fileInfo = QFileInfo(self.inFileName)
-        uri = 'NETCDF:"%s":%s' % (fileInfo.fileName(), self.varsComboBox.currentText())
+        uri = 'NETCDF:{}:{}'.format(fileInfo.fileName(), self.varsComboBox.currentText())
         self.uri = uri
 
 
@@ -327,15 +362,18 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
                 del self.dim_def[dim]
             else:
                 self.dim_names.append(dim)
-
+        print 'my dim_names:', dim_names
         for dim in dim_names:
+            print 'is dim ', dim, 'dim_values ', self.dim_values 
             if dim in self.dim_values:
                 if (dim + "#units") in md:
                     timestr = md[dim + "#units"]
                     units = timestr.split()[0].lower()
+                    print timestr, units
                     if (dim + "#calendar") in md:
                         calendar = md[dim + "#calendar"]
                         cdftime = utime(timestr, calendar=calendar)
+                    print dim_values[dim]
                     if units in _units:
                         try:
                             dates = cdftime.num2date(self.dim_values[dim])
@@ -366,7 +404,6 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         self.timesComboBox.blockSignals(True)
         self.timesComboBox.clear()
         dim = 'time'
-        print "dim_values2 {}".format(self.dim_values2)
         
         if dim in self.dim_values2:
             for k, item  in enumerate(self.dim_values2[dim]):
@@ -383,16 +420,16 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
     def showSaveDialog(self):
         # Declare the filetype in which to save the output file
         # Currently the plugin only supports tif files
-        fileTypes = 'All Supported Raster Files (*.tif *.tiff)'
+        fileTypes = 'All Supported Raster Files (*.vrt *.tif *.tiff *.img *.asc *.png *.jpg *.jpeg *.gif *.xpm *.bmp *.pix *.map *.mpr *.mpl *.hgt *.nc *.nc2 *.nc4 *.grb *.rst *.grd *.rda *.hdr *.dem *.blx *.sqlite *.sdat")'
         fileName, filter = QtGui.QFileDialog.getSaveFileNameAndFilter(
             self, 'Output Raster File:', '', fileTypes)
-
+        print fileName, filter
         if len(fileName) is 0:
             return
         else:
             # Extract the base filename without the suffix if it exists
             # Convert the fileName from QString to python string
-            fileNameStr = str(self.outFileName)
+            fileNameStr = str(fileName)
 
             # Split the fileNameStr where/if a '.' exists
             splittedFileName = fileNameStr.split('.')
@@ -460,6 +497,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
 
                 else:
                     suffixList = []
+
                     if suffixNum == 2:
                         # Extract the first suffix and put it in the list
                         dirtySuffixStr = splittedFilter[1]
@@ -514,6 +552,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         
     def readRaster(self):
         uri = self.uri
+        gdal.AllRegister()
         ds = gdal.Open(uri)
         rasterBand = self.rasterBand
         rb = ds.GetRasterBand(rasterBand)
