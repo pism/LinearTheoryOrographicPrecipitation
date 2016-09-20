@@ -27,10 +27,12 @@ from PyQt4 import QtGui, uic
 from PyQt4.QtCore import QFileInfo
 from qgis.utils import iface
 
+import logging
 import re, math
 import numpy as np
 from osgeo import gdal, osr
 from netcdftime import utime
+
 from linear_orog_precip import OrographicPrecipitation, saveRaster
 
 debug = True
@@ -82,6 +84,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         self.outputButton.clicked.connect(self.showSaveDialog)
         self.gaussianCheckBox.clicked.connect(self.change_input)
         self.varsComboBox.currentIndexChanged.connect(self.update_variable)
+        self.timesComboBox.currentIndexChanged.connect(self.update_time)
 
 
     def update_variable(self):
@@ -91,88 +94,16 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
             self.updateRasterBand()
 
 
+    def update_time(self):
+        self.rasterBand = self.timesComboBox.currentIndex()
+        print 'current index {}'.format(self.rasterBand)
+
+
     def clear(self):
-        # UPDATE ME
-        if debug>0:
-            print('clear')
-        self.ui.lblDim1.setText('     -     ')
-        self.ui.lblDim2.setText('     -     ')
-        self.ui.cboDim1.clear()
-        self.ui.cboDim2.clear()
-        self.ui.leBandSelection.clear()
-        if self.ui.pbnDim1.menu() is not None:
-            QObject.disconnect(self.ui.pbnDim1.menu(), SIGNAL("triggered(QAction *)"), self.on_pbnDimx_triggered)   
-            self.ui.pbnDim1.setMenu(None)
-        if self.ui.pbnDim2.menu() is not None:
-            QObject.disconnect(self.ui.pbnDim2.menu(), SIGNAL("triggered(QAction *)"), self.on_pbnDimx_triggered)   
-            self.ui.pbnDim2.setMenu(None)
-
-
-    def get_Cw(self):
-        Cw = float(str(self.Cw.text()))
-        return Cw
-
-
-    def get_Hw(self):
-        Hw = float(str(self.Hw.text()))
-        return Hw
-
-
-    def get_latitude(self):
-        latitude = float(str(self.latitude.text()))
-        return latitude
-
-
-    def get_Nm(self):
-        Nm = float(str(self.Nm.text()))
-        return Nm
-
-    
-    def get_tau_c(self):
-        tau_c = float(str(self.tau_c.text()))
-        return tau_c
-
-    
-    def get_tau_f(self):
-        tau_f = float(str(self.tau_f.text()))
-        return tau_f
-
-    
-    def get_truncate(self):
-        # Implement: True if box is checked
-        return True
-
-    
-    def get_P0(self):
-        P0 = float(str(self.P0.text()))
-        return P0
-
-    
-    def get_P_scale(self):
-        P_scale = float(str(self.P_scale.text()))
-        return P_scale
-
-    
-    def get_wind_direction(self):
-        wind_direction = float(str(self.wind_direction.text()))
-        return wind_direction
-
-
-    def get_wind_speed(self):
-        wind_speed = float(str(self.wind_speed.text()))
-        return wind_speed
-
-    
-    def gaussian_bump(self, xmin, xmax, ymin, ymax, dx, dy):
-        # Reproduce Fig 4c in SB2004
-        x, y = np.arange(xmin, xmax, dx), np.arange(ymin, ymax, dy)
-        h_max = 500.
-        x0 = -25e3
-        y0 = 0
-        sigma_x = sigma_y = 15e3
-        X, Y = np.meshgrid(x, y)
-        Orography = h_max * np.exp(-(((X-x0)**2/(2*sigma_x**2))+((Y-y0)**2/(2*sigma_y**2))))
-        return X, Y, Orography
+        self.isNetCDF = False
+        self.rasterBand = None
+        self.varsComboBox.clear()
+        self.timesComboBox.clear()
 
 
     def run(self):
@@ -226,6 +157,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
             iface.addRasterLayer(outFileName, baseName)
         self.close()
 
+
     def updateURI(self):
         if debug>0:
             print('updateURI')
@@ -236,8 +168,14 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
 
 
     def change_input(self):
-        self.inputLineEdit.setText('non-georeferenced Gaussian bump')
-
+        if self.gaussianCheckBox.isChecked():
+            self.inputLineEdit.setText('<non-georeferenced Gaussian bump>')
+            self.varsComboBox.setDisabled(True)
+            self.timesComboBox.setDisabled(True)
+        else:
+            self.inputLineEdit.clear()
+            self.varsComboBox.setDisabled(True)
+            self.timesComboBox.setDisabled(True)
 
     def updateFile(self):
         # self.clear()
@@ -295,9 +233,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         fileName = str(QtGui.QFileDialog.getOpenFileName(self,
                                                         "Input Raster File:"))
 
-        if len(fileName) is 0:
-            return
-        else:
+        if len(fileName) is not 0:
             self.inFileName = fileName;
 
         gdal.AllRegister()
@@ -321,6 +257,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         fullBandName = self.varsComboBox.currentText()
         rasterBand = num(fullBandName.split('Band ')[1])
         self.rasterBand = rasterBand
+        self.uri = self.inFileName
 
 
     def updateNetCDFVariable(self):
@@ -390,11 +327,8 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
                 del self.dim_def[dim]
             else:
                 self.dim_names.append(dim)
-        print self.dim_names, self.dim_values
-        self.updateNetCDFTime()
 
         for dim in dim_names:
-            #dim+"#standard_name" in md and md[dim+"#standard_name"] == "time":
             if dim in self.dim_values:
                 if (dim + "#units") in md:
                     timestr = md[dim + "#units"]
@@ -413,40 +347,43 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
                             val = date.strftime("%Y-%m-%d %H:%M:%S")
                             if not val.endswith(" 00:00:00"):
                                 only_days = False
-                            self.dim_values2[ dim ].append(val)
+                            self.dim_values2[dim].append(val)
                         if only_days:
                             for i in range(0,len(self.dim_values2[ dim ])):
                                 self.dim_values2[dim][i] = self.dim_values2[dim][i][0:10]
-
-        if debug>0:
-            print(str(dim_map))
-            print(str(self.dim_names))
-            print(str(self.dim_def))
-            print(str(self.dim_values))
-            print(str(self.dim_values2))
+        # print "dim_values2 {}".format(self.dim_values2)
+        # if debug>0:
+        #     print(str(dim_map))
+        #     print(str(self.dim_names))
+        #     print(str(self.dim_def))
+        #     print(str(self.dim_values))
+        #     print(str(self.dim_values2))
         self.updateNetCDFTime()
 
 
     def updateNetCDFTime(self):
+        self.timesComboBox.setDisabled(False)
         self.timesComboBox.blockSignals(True)
         self.timesComboBox.clear()
-        self.dim_values['time']
-        for k, item  in enumerate(self.dim_values['time']):
-            self.timesComboBox.addItem('time {}: {}'.format(k, item))
+        dim = 'time'
+        print "dim_values2 {}".format(self.dim_values2)
+        
+        if dim in self.dim_values2:
+            for k, item  in enumerate(self.dim_values2[dim]):
+                self.timesComboBox.addItem('time {}: {}'.format(k, item))
+        else:
+            for k, item  in enumerate(self.dim_values['time']):
+                self.timesComboBox.addItem('time {}: {}'.format(k, item))
         self.timesComboBox.blockSignals(False)
-
-        if debug>0:
+        self.update_time()
+        if debug:
             print('done updateNetCDFTime ' + str(item))
-            print self.uri
 
 
     def showSaveDialog(self):
-        #self.outFileName = str(QtGui.QFileDialog.getSaveFileName(self,
-        #        'Output Raster File:', '', '*.tif'))
-
         # Declare the filetype in which to save the output file
         # Currently the plugin only supports tif files
-        fileTypes = 'GeoTIFF Files (*.tif *.tiff)'
+        fileTypes = 'All Supported Raster Files (*.tif *.tiff)'
         fileName, filter = QtGui.QFileDialog.getSaveFileNameAndFilter(
             self, 'Output Raster File:', '', fileTypes)
 
@@ -455,7 +392,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         else:
             # Extract the base filename without the suffix if it exists
             # Convert the fileName from QString to python string
-            fileNameStr = str(fileName)
+            fileNameStr = str(self.outFileName)
 
             # Split the fileNameStr where/if a '.' exists
             splittedFileName = fileNameStr.split('.')
@@ -574,11 +511,11 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         self.outputLineEdit.setText(self.outFileName)
 
 
+        
     def readRaster(self):
-        inFileName = self.inFileName
-        ds = gdal.Open(inFileName)
+        uri = self.uri
+        ds = gdal.Open(uri)
         rasterBand = self.rasterBand
-        print rasterBand
         rb = ds.GetRasterBand(rasterBand)
         self.RasterArray = rb.ReadAsArray()
         self.projection = ds.GetProjection()
@@ -600,3 +537,70 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         easting = np.arange(ulx, rx + rezX, rezX)
         northing = np.arange(ly, uly - rezY, -rezY)
         self.X, self.Y = np.meshgrid(easting, northing)
+
+
+    def get_Cw(self):
+        Cw = float(str(self.Cw.text()))
+        return Cw
+
+
+    def get_Hw(self):
+        Hw = float(str(self.Hw.text()))
+        return Hw
+
+
+    def get_latitude(self):
+        latitude = float(str(self.latitude.text()))
+        return latitude
+
+
+    def get_Nm(self):
+        Nm = float(str(self.Nm.text()))
+        return Nm
+
+    
+    def get_tau_c(self):
+        tau_c = float(str(self.tau_c.text()))
+        return tau_c
+
+    
+    def get_tau_f(self):
+        tau_f = float(str(self.tau_f.text()))
+        return tau_f
+
+    
+    def get_truncate(self):
+        # Implement: True if box is checked
+        return True
+
+    
+    def get_P0(self):
+        P0 = float(str(self.P0.text()))
+        return P0
+
+    
+    def get_P_scale(self):
+        P_scale = float(str(self.P_scale.text()))
+        return P_scale
+
+    
+    def get_wind_direction(self):
+        wind_direction = float(str(self.wind_direction.text()))
+        return wind_direction
+
+
+    def get_wind_speed(self):
+        wind_speed = float(str(self.wind_speed.text()))
+        return wind_speed
+
+    
+    def gaussian_bump(self, xmin, xmax, ymin, ymax, dx, dy):
+        # Reproduce Fig 4c in SB2004
+        x, y = np.arange(xmin, xmax, dx), np.arange(ymin, ymax, dy)
+        h_max = 500.
+        x0 = -25e3
+        y0 = 0
+        sigma_x = sigma_y = 15e3
+        X, Y = np.meshgrid(x, y)
+        Orography = h_max * np.exp(-(((X-x0)**2/(2*sigma_x**2))+((Y-y0)**2/(2*sigma_y**2))))
+        return X, Y, Orography

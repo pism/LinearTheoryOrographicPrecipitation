@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>729</width>
-    <height>700</height>
+    <width>608</width>
+    <height>614</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -31,7 +31,7 @@
     <rect>
      <x>20</x>
      <y>220</y>
-     <width>431</width>
+     <width>531</width>
      <height>20</height>
     </rect>
    </property>
@@ -55,14 +55,17 @@
   <widget class="QLineEdit" name="wind_direction">
    <property name="geometry">
     <rect>
-     <x>280</x>
+     <x>260</x>
      <y>290</y>
-     <width>151</width>
+     <width>50</width>
      <height>20</height>
     </rect>
    </property>
    <property name="text">
     <string>270</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QLabel" name="wind_direction_text">
@@ -70,7 +73,7 @@
     <rect>
      <x>20</x>
      <y>290</y>
-     <width>251</width>
+     <width>231</width>
      <height>20</height>
     </rect>
    </property>
@@ -81,8 +84,8 @@
   <widget class="QLabel" name="wind_speed_text">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>320</y>
+     <x>340</x>
+     <y>290</y>
      <width>141</width>
      <height>20</height>
     </rect>
@@ -94,27 +97,33 @@
   <widget class="QLineEdit" name="wind_speed">
    <property name="geometry">
     <rect>
-     <x>280</x>
-     <y>320</y>
-     <width>151</width>
+     <x>530</x>
+     <y>290</y>
+     <width>50</width>
      <height>20</height>
     </rect>
    </property>
    <property name="text">
     <string>15</string>
    </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
   </widget>
   <widget class="QLineEdit" name="Nm">
    <property name="geometry">
     <rect>
-     <x>280</x>
+     <x>260</x>
      <y>350</y>
-     <width>151</width>
+     <width>50</width>
      <height>20</height>
     </rect>
    </property>
    <property name="text">
     <string>0.005</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QLabel" name="Nm_text">
@@ -133,34 +142,40 @@
   <widget class="QLineEdit" name="tau_c">
    <property name="geometry">
     <rect>
-     <x>280</x>
-     <y>380</y>
-     <width>151</width>
+     <x>260</x>
+     <y>320</y>
+     <width>50</width>
      <height>20</height>
     </rect>
    </property>
    <property name="text">
     <string>1000</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QLineEdit" name="tau_f">
    <property name="geometry">
     <rect>
-     <x>280</x>
-     <y>410</y>
-     <width>151</width>
+     <x>530</x>
+     <y>320</y>
+     <width>50</width>
      <height>20</height>
     </rect>
    </property>
    <property name="text">
     <string>1000</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QLabel" name="tau_c_text">
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>380</y>
+     <y>320</y>
      <width>231</width>
      <height>20</height>
     </rect>
@@ -172,9 +187,9 @@
   <widget class="QLabel" name="tau_f_text">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>410</y>
-     <width>231</width>
+     <x>340</x>
+     <y>320</y>
+     <width>141</width>
      <height>20</height>
     </rect>
    </property>
@@ -185,21 +200,24 @@
   <widget class="QLineEdit" name="Cw">
    <property name="geometry">
     <rect>
-     <x>280</x>
-     <y>440</y>
-     <width>151</width>
+     <x>260</x>
+     <y>380</y>
+     <width>171</width>
      <height>20</height>
     </rect>
    </property>
    <property name="text">
     <string>0.008293103448275862</string>
    </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
   </widget>
   <widget class="QLabel" name="Cw_text">
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>440</y>
+     <y>380</y>
      <width>231</width>
      <height>20</height>
     </rect>
@@ -211,27 +229,30 @@
   <widget class="QLineEdit" name="latitude">
    <property name="geometry">
     <rect>
-     <x>280</x>
-     <y>500</y>
-     <width>151</width>
+     <x>260</x>
+     <y>410</y>
+     <width>50</width>
      <height>20</height>
     </rect>
    </property>
    <property name="text">
     <string>0</string>
    </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
   </widget>
   <widget class="QLabel" name="latitude_text">
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>500</y>
+     <y>410</y>
      <width>231</width>
      <height>20</height>
     </rect>
    </property>
    <property name="text">
-    <string>Latitude</string>
+    <string>Latitude for Coriolis force</string>
    </property>
   </widget>
   <widget class="QLabel" name="output_raster_text">
@@ -251,7 +272,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>530</y>
+     <y>440</y>
      <width>231</width>
      <height>20</height>
     </rect>
@@ -263,34 +284,40 @@
   <widget class="QLineEdit" name="P0">
    <property name="geometry">
     <rect>
-     <x>280</x>
-     <y>530</y>
-     <width>151</width>
+     <x>260</x>
+     <y>440</y>
+     <width>50</width>
      <height>20</height>
     </rect>
    </property>
    <property name="text">
     <string>0</string>
    </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
   </widget>
   <widget class="QLineEdit" name="P_scale">
    <property name="geometry">
     <rect>
-     <x>280</x>
-     <y>560</y>
-     <width>151</width>
+     <x>260</x>
+     <y>470</y>
+     <width>50</width>
      <height>20</height>
     </rect>
    </property>
    <property name="text">
     <string>1</string>
    </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
   </widget>
   <widget class="QLabel" name="P_scale_text">
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>560</y>
+     <y>470</y>
      <width>231</width>
      <height>20</height>
     </rect>
@@ -303,20 +330,20 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>590</y>
+     <y>500</y>
      <width>231</width>
      <height>20</height>
     </rect>
    </property>
    <property name="text">
-    <string>Truncate</string>
+    <string>Truncate Precipitation</string>
    </property>
   </widget>
   <widget class="QCheckBox" name="truncateCheckBox">
    <property name="geometry">
     <rect>
-     <x>280</x>
-     <y>590</y>
+     <x>290</x>
+     <y>500</y>
      <width>16</width>
      <height>18</height>
     </rect>
@@ -331,8 +358,8 @@
   <widget class="QLabel" name="Hw_text">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>470</y>
+     <x>340</x>
+     <y>350</y>
      <width>231</width>
      <height>20</height>
     </rect>
@@ -344,21 +371,24 @@
   <widget class="QLineEdit" name="Hw">
    <property name="geometry">
     <rect>
-     <x>280</x>
-     <y>470</y>
-     <width>151</width>
+     <x>530</x>
+     <y>350</y>
+     <width>50</width>
      <height>20</height>
     </rect>
    </property>
    <property name="text">
     <string>2500</string>
    </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
   </widget>
   <widget class="QPushButton" name="runButton">
    <property name="geometry">
     <rect>
-     <x>380</x>
-     <y>660</y>
+     <x>480</x>
+     <y>570</y>
      <width>110</width>
      <height>32</height>
     </rect>
@@ -371,7 +401,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>660</y>
+     <y>570</y>
      <width>110</width>
      <height>32</height>
     </rect>
@@ -444,7 +474,7 @@
     <rect>
      <x>20</x>
      <y>160</y>
-     <width>431</width>
+     <width>531</width>
      <height>20</height>
     </rect>
    </property>
@@ -472,7 +502,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>630</y>
+     <y>540</y>
      <width>16</width>
      <height>20</height>
     </rect>
@@ -488,7 +518,7 @@
    <property name="geometry">
     <rect>
      <x>50</x>
-     <y>630</y>
+     <y>540</y>
      <width>121</width>
      <height>20</height>
     </rect>
@@ -501,8 +531,8 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>610</y>
-     <width>431</width>
+     <y>520</y>
+     <width>561</width>
      <height>20</height>
     </rect>
    </property>
@@ -515,7 +545,7 @@
     <rect>
      <x>120</x>
      <y>60</y>
-     <width>400</width>
+     <width>411</width>
      <height>30</height>
     </rect>
    </property>
@@ -538,7 +568,7 @@
     <rect>
      <x>120</x>
      <y>100</y>
-     <width>400</width>
+     <width>411</width>
      <height>30</height>
     </rect>
    </property>
@@ -554,6 +584,32 @@
    </property>
    <property name="text">
     <string>Times</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="resetButton">
+   <property name="geometry">
+    <rect>
+     <x>370</x>
+     <y>570</y>
+     <width>110</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Reset</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="restoreButton">
+   <property name="geometry">
+    <rect>
+     <x>230</x>
+     <y>570</y>
+     <width>130</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Restore Defaults</string>
    </property>
   </widget>
  </widget>
