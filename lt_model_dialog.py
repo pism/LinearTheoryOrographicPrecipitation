@@ -399,7 +399,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
                 if (dim + "#units") in md:
                     timestr = md[dim + "#units"]
                     units = timestr.split()[0].lower()
-                    if (dim + #calendar) in md:
+                    if (dim + "#calendar") in md:
                         calendar = md[dim + "#calendar"]
                         cdftime = utime(timestr, calendar=calendar)
                     if units in _units:
@@ -425,6 +425,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
             print(str(self.dim_values))
             print(str(self.dim_values2))
         self.updateNetCDFTime()
+
 
     def updateNetCDFTime(self):
         self.timesComboBox.blockSignals(True)
