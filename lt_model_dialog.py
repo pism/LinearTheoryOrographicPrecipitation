@@ -327,22 +327,24 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
 
         for key in sorted(md.iterkeys()):
             if key.startswith('NETCDF_DIM_'):
-                line="%s=%s" % (key, md[key])
+                line="{}={}".format(key, md[key])
+                print line
                 m = re.search('^(NETCDF_DIM_.+)={(.+)}', line)
+                print m
                 if m is not None:
                     dim_map[m.group(1)] = m.group(2)
-
         if not 'NETCDF_DIM_EXTRA' in dim_map:
             self.warning()
             return
         
         tok = dim_map['NETCDF_DIM_EXTRA']
         if debug:
-            print tok
+            print 'my tok ', tok
         if tok is not None:
             for dim in tok.split(','):
-                self.dim_names.append( dim )
+                self.dim_names.append(dim)
                 tok2 = dim_map.get('NETCDF_DIM_' + dim + '_VALUES')
+                print 'my tok2 ', tok2
                 self.dim_values[dim] = []
                 if tok2 is not None:
                     for s in tok2.split(','):
@@ -353,18 +355,12 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
                     for s in tok2.split(','):
                         self.dim_def[ dim ].append(num(s))
 
-        # remove any dims which have only 1 element
         dim_names = self.dim_names
         self.dim_names = []
         for dim in dim_names:
-            if self.dim_def[dim][0] <= 1:
-                del self.dim_values[dim]
-                del self.dim_def[dim]
-            else:
-                self.dim_names.append(dim)
-        print 'my dim_names:', dim_names
+            self.dim_names.append(dim)
         for dim in dim_names:
-            print 'is dim ', dim, 'dim_values ', self.dim_values 
+            print 'is dim ', dim, 'dim_values ', self.dim_values[dim]
             if dim in self.dim_values:
                 if (dim + "#units") in md:
                     timestr = md[dim + "#units"]
@@ -372,8 +368,11 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
                     print timestr, units
                     if (dim + "#calendar") in md:
                         calendar = md[dim + "#calendar"]
+                        if calendar in ('none'):
+                            # PISMS writes 'none' as calendar
+                            calendar = '365_day'
                         cdftime = utime(timestr, calendar=calendar)
-                    print dim_values[dim]
+                    print self.dim_values[dim]
                     if units in _units:
                         try:
                             dates = cdftime.num2date(self.dim_values[dim])
