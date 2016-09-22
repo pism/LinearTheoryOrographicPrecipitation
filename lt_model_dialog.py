@@ -32,8 +32,9 @@ import re, math
 import numpy as np
 from osgeo import gdal, osr
 from netcdftime import utime
+import json
 
-from linear_orog_precip import OrographicPrecipitation, saveRaster
+from linear_orog_precip import OrographicPrecipitation
 
 debug = True
 _units = ['days', 'hours', 'minutes', 'seconds', 'day', 'hour', 'minute', 'second']
@@ -47,14 +48,16 @@ def get_all_raster_drivers():
     raster_driver_dict = dict()
     for no in range(gdal.GetDriverCount()):
         driver = gdal.GetDriver(no)
-        driver_meta = driver.GetMetadata()
-        if 'DMD_EXTENSIONS' in driver_meta:
-            raster_driver_dict[driver.ShortName] = driver_meta['DMD_EXTENSIONS']
+        if driver.GetMetadataItem(gdal.DCAP_RASTER):
+            raster_driver_dict[driver.GetMetadataItem(gdal.DMD_LONGNAME)] = driver.GetMetadataItem(gdal.DMD_EXTENSIONS)
     return raster_driver_dict
 
 
-def readMyRaster(uri, rasterBand):
+def readRaster(uri, rasterBand):
+    proj4 = None
     gdal.AllRegister()
+    if debug:
+        print('readRaster: Open uri {} and band {}'.format(uri, rasterBand))
     ds = gdal.Open(uri)
     rb = ds.GetRasterBand(rasterBand)
     RasterArray = rb.ReadAsArray()
@@ -77,8 +80,35 @@ def readMyRaster(uri, rasterBand):
     easting = np.arange(ulx, rx + rezX, rezX)
     northing = np.arange(ly, uly - rezY, -rezY)
     X, Y = np.meshgrid(easting, northing)
+    if debug:
+        print('readRaster: geoTrans {} and proj4 {}'.format(geoTrans, proj4))
 
     return X, Y, RasterArray, geoTrans, proj4
+
+
+def saveRaster(newRasterfn, geoTrans, proj4, array):
+    '''
+    Function to export geo-coded raster
+
+    Parameters
+    ----------
+
+    '''
+
+    cols = array.shape[1]
+    rows = array.shape[0]
+    if debug:
+        print cols, rows
+    driver = gdal.GetDriverByName('GTiff')
+    outRaster = driver.Create(newRasterfn, cols, rows, 1, gdal.GDT_Float32)
+    print outRaster
+    outRaster.SetGeoTransform(geoTrans)
+    outband = outRaster.GetRasterBand(1)
+    outband.WriteArray(array)
+    outRasterSRS = osr.SpatialReference()
+    outRasterSRS.ImportFromProj4(proj4)
+    outRaster.SetProjection(outRasterSRS.ExportToWkt())
+    outband.FlushCache()
 
 
 def num(s):
@@ -109,6 +139,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         self.isNetCDF = False
         self.rasterBand = None
         self.netCDFVariable = None
+        self.plugin_dir = os.path.dirname(__file__)
 
     def configUI(self):
         self.inputLineEdit.setReadOnly(True)
@@ -123,8 +154,27 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         self.inputButton.clicked.connect(self.showOpenDialog)
         self.outputButton.clicked.connect(self.showSaveDialog)
         self.gaussianCheckBox.clicked.connect(self.change_input)
+        self.restoreButton.clicked.connect(self.restoreDefaults)
+        self.resetButton.clicked.connect(self.reset)
         self.varsComboBox.currentIndexChanged.connect(self.update_variable)
         self.timesComboBox.currentIndexChanged.connect(self.update_time)
+
+
+    def restoreDefaults(self):
+        defaults_file = os.path.join(self.plugin_dir, 'default_constants.json')
+        with open(defaults_file, 'r') as jsonfile:
+            defaults = json.load(jsonfile)
+        self.Cw.setText(str(defaults['Cw']))
+        self.Hw.setText(str(defaults['Hw']))
+        self.latitude.setText(str(defaults['latitude']))
+        self.tau_c.setText(str(defaults['tau_c']))
+        self.tau_f.setText(str(defaults['tau_f']))
+        self.P0.setText(str(defaults['P0']))
+        self.P_scale.setText(str(defaults['P_scale']))
+
+
+    def reset(self):
+        self.restoreDefaults
 
 
     def update_variable(self):
@@ -135,8 +185,10 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
 
 
     def update_time(self):
-        self.rasterBand = self.timesComboBox.currentIndex()
-        print 'current index {}'.format(self.rasterBand)
+        # GDAL rasterBands are 1 indexed            
+        self.rasterBand = self.timesComboBox.currentIndex() + 1
+        if debug:
+            print 'update_time: current rasterBand is {}'.format(self.rasterBand) 
 
 
     def clear(self):
@@ -182,8 +234,11 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
             geoTrans = [0., dx, 0., 0., 0., -dy]
             proj4 = ''
         else:
-            X, Y, Orography, geoTrans, proj4 = readMyRaster(self.uri, self.rasterBand)
+            X, Y, Orography, geoTrans, proj4 = readRaster(self.uri, self.rasterBand)
         OP = OrographicPrecipitation(X, Y, Orography, physical_constants, truncate=self.truncateCheckBox.isChecked())
+        if debug:
+            print OP.P
+            print geoTrans, proj4
         outFileName = self.outFileName
         saveRaster(outFileName, geoTrans, proj4, OP.P)
         if self.addResultCheckBox.isChecked():
@@ -194,11 +249,14 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
 
 
     def updateURI(self):
-        if debug>0:
+        if debug:
             print('updateURI')
         # update URI
         fileInfo = QFileInfo(self.inFileName)
-        uri = 'NETCDF:{}:{}'.format(fileInfo.fileName(), self.varsComboBox.currentText())
+        if self.isNetCDF:
+            uri = 'NETCDF:{}:{}'.format(fileInfo.fileName(), self.varsComboBox.currentText())
+        else:
+            uri = self.inFileName
         self.uri = uri
 
 
@@ -215,7 +273,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
     def updateFile(self):
         # self.clear()
         fileName = self.inFileName
-        if debug>0:
+        if debug:
             print('updateFile ' + fileName)
         if fileName == '':
             return
@@ -305,6 +363,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         self.dim_band = dict()
         # self.clear()
         uri = 'NETCDF:"%s":%s' % (self.inFileName, self.netCDFVariable)
+        self.uri = uri
 
         if debug>0:
             print('updateVariable ' + str(uri))
@@ -328,11 +387,16 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         for key in sorted(md.iterkeys()):
             if key.startswith('NETCDF_DIM_'):
                 line="{}={}".format(key, md[key])
-                print line
                 m = re.search('^(NETCDF_DIM_.+)={(.+)}', line)
-                print m
                 if m is not None:
                     dim_map[m.group(1)] = m.group(2)
+                else:
+                    # netCDF file has time dimension but only 1 entry
+                    # 'NETCDF_DIM_time_VALUES=-155088000'
+                    m = re.search('^(NETCDF_DIM_.+)=(.+)', line)
+                    if m is not None:
+                        dim_map[m.group(1)] = m.group(2)
+                    
         if not 'NETCDF_DIM_EXTRA' in dim_map:
             self.warning()
             return
@@ -419,7 +483,8 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
     def showSaveDialog(self):
         # Declare the filetype in which to save the output file
         # Currently the plugin only supports tif files
-        fileTypes = 'All Supported Raster Files (*.vrt *.tif *.tiff *.img *.asc *.png *.jpg *.jpeg *.gif *.xpm *.bmp *.pix *.map *.mpr *.mpl *.hgt *.nc *.nc2 *.nc4 *.grb *.rst *.grd *.rda *.hdr *.dem *.blx *.sqlite *.sdat")'
+        fileTypes = 'All Supported Raster Files (*.vrt *.tif *.tiff *.img *.asc *.png *.jpg *.jpeg *.gif *.xpm *.bmp *.pix *.map *.mpr *.mpl *.hgt *.nc *.grb *.rst *.grd *.rda *.hdr *.dem *.blx *.sqlite *.sdat)'
+        fileTypes = 'GeoTiff (*.tif *.tiff)'
         fileName, filter = QtGui.QFileDialog.getSaveFileNameAndFilter(
             self, 'Output Raster File:', '', fileTypes)
         print fileName, filter
@@ -541,40 +606,12 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
                         suffixStr = suffixList[0]
 
             self.outFileName = baseFileName + suffixStr
+            self.outFileNameSuffixStr = suffixStr
 
         if (self.inFileName is not None or self.gaussianCheckBox.isChecked()) and self.outFileName is not None:
             self.runButton.setDisabled(False)
         self.outputLineEdit.clear()
-        self.outputLineEdit.setText(self.outFileName)
-
-
-        
-    def readRaster(self):
-        uri = self.uri
-        gdal.AllRegister()
-        ds = gdal.Open(uri)
-        rasterBand = self.rasterBand
-        rb = ds.GetRasterBand(rasterBand)
-        self.RasterArray = rb.ReadAsArray()
-        self.projection = ds.GetProjection()
-
-        geoTrans = ds.GetGeoTransform()
-        pxwidth = ds.RasterXSize
-        pxheight = ds.RasterYSize
-        ulx = geoTrans[0]
-        uly = geoTrans[3]
-        rezX = geoTrans[1]
-        rezY = geoTrans[5]
-        self.geoTrans = geoTrans
-        rx = ulx + pxwidth * rezX
-        ly = uly + pxheight * rezY
-        osr_ref = osr.SpatialReference()
-        osr_ref.ImportFromWkt(self.projection)
-        self.proj4 = osr_ref.ExportToProj4()
-
-        easting = np.arange(ulx, rx + rezX, rezX)
-        northing = np.arange(ly, uly - rezY, -rezY)
-        self.X, self.Y = np.meshgrid(easting, northing)
+        self.outputLineEdit.setText(self.outFileName)        
 
 
     def get_Cw(self):

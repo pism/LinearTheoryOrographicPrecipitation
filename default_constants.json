@@ -1,0 +1,12 @@
+{
+    "Cw":0.008293103448275862,
+    "Hw":2500,
+    "Nm":0.005,
+    "P0":0,
+    "P_scale":1,
+    "latitude":0,
+    "tau_c":1000,
+    "tau_f":1000,
+    "wind_direction":270,
+    "wind_speed":15
+}

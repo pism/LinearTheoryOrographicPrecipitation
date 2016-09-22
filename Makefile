@@ -49,7 +49,7 @@ PY_FILES = \
 
 UI_FILES = lt_model_dialog_base.ui
 
-EXTRAS = metadata.txt icon.png olympics_500m.tif
+EXTRAS = metadata.txt icon.png default_constants.json
 
 COMPILED_RESOURCE_FILES = resources.py
 
