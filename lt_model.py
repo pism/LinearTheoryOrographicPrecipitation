@@ -163,7 +163,7 @@ class LinearTheoryOrographicPrecipitation:
         icon_path = ':/plugins/LinearTheoryOrographicPrecipitation/icon.png'
         self.add_action(
             icon_path,
-            text=self.tr(u'Linear Theory of Orographic Precipitation Model'),
+            text=self.tr(u'Orographic Precipitation'),
             callback=self.run,
             parent=self.iface.mainWindow())
 
