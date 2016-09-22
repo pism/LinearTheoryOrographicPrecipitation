@@ -34,6 +34,13 @@ from osgeo import gdal, osr
 from netcdftime import utime
 import json
 
+hasCFunits = False
+try:
+    import cf_units
+    hasCFunits = True
+except:
+    pass
+
 from linear_orog_precip import OrographicPrecipitation
 
 debug = True
@@ -127,10 +134,6 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         # self.<objectname>, and you can use autoconnect slots - see
         # http://qt-project.org/doc/qt-4.8/designer-using-a-ui-file.html
         # #widgets-and-dialogs-with-auto-connect
-        self.setupUi(self)
-        self.configUI()
-        self.physical_constants = dict()
-        self.connectSignals()
         self.inFileName = None
         self.outFileName = None
         self.prefix = ''
@@ -140,12 +143,18 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         self.rasterBand = None
         self.netCDFVariable = None
         self.plugin_dir = os.path.dirname(__file__)
+        self.setupUi(self)
+        self.configUI()
+        self.physical_constants = dict()
+        self.connectSignals()
 
     def configUI(self):
+        self.restoreDefaults()
         self.inputLineEdit.setReadOnly(True)
         self.outputLineEdit.setReadOnly(True)
         self.runButton.setDisabled(True)
         self.timesComboBox.setDisabled(True)
+        self.setupUnitsComboBox()
 
 
     def connectSignals(self):
@@ -158,8 +167,24 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         self.resetButton.clicked.connect(self.reset)
         self.varsComboBox.currentIndexChanged.connect(self.update_variable)
         self.timesComboBox.currentIndexChanged.connect(self.update_time)
+        self.unitsComboBox.currentIndexChanged.connect(self.update_units)
 
 
+    def setupUnitsComboBox(self):
+        self.unitsComboBox.addItem('mm hr-1')
+        self.out_units = self.unitsComboBox.currentText()
+        if debug:
+            print self.out_units
+        if hasCFunits:
+            self.unitsComboBox.addItem('mm s-1')
+            self.unitsComboBox.addItem('mm yr-1')
+            self.unitsComboBox.addItem('m hr-1')
+            self.unitsComboBox.addItem('m s-1')
+            self.unitsComboBox.addItem('m yr-1')
+            self.unitsComboBox.setDisabled(False)
+            self.cf_units_text.clear()
+            
+        
     def restoreDefaults(self):
         defaults_file = os.path.join(self.plugin_dir, 'default_constants.json')
         with open(defaults_file, 'r') as jsonfile:
@@ -175,6 +200,27 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
 
     def reset(self):
         self.restoreDefaults
+        self.inFileName = None
+        self.outFileName = None
+        self.prefix = ''
+        self.variables = None
+        self.uri = None
+        self.isNetCDF = False
+        self.rasterBand = None
+        self.netCDFVariable = None
+        self.inputLineEdit.clear()
+        self.outputLineEdit.clear()
+        self.varsComboBox.blockSignals(True)
+        self.varsComboBox.clear()
+        self.varsComboBox.blockSignals(False)
+        self.timesComboBox.blockSignals(True)
+        self.timesComboBox.clear()
+        self.timesComboBox.blockSignals(True)
+        self.unitsComboBox.setCurrentIndex(0)
+
+
+    def update_units(self):
+        self.out_units = self.unitsComboBox.currentText()
 
 
     def update_variable(self):
@@ -189,13 +235,6 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         self.rasterBand = self.timesComboBox.currentIndex() + 1
         if debug:
             print 'update_time: current rasterBand is {}'.format(self.rasterBand) 
-
-
-    def clear(self):
-        self.isNetCDF = False
-        self.rasterBand = None
-        self.varsComboBox.clear()
-        self.timesComboBox.clear()
 
 
     def run(self):
@@ -235,7 +274,10 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
             proj4 = ''
         else:
             X, Y, Orography, geoTrans, proj4 = readRaster(self.uri, self.rasterBand)
-        OP = OrographicPrecipitation(X, Y, Orography, physical_constants, truncate=self.truncateCheckBox.isChecked())
+        if hasCFunits:
+            OP = OrographicPrecipitation(X, Y, Orography, physical_constants, truncate=self.truncateCheckBox.isChecked(), ounits=self.unitsComboBox.currentText())
+        else:
+            OP = OrographicPrecipitation(X, Y, Orography, physical_constants, truncate=self.truncateCheckBox.isChecked())
         if debug:
             print OP.P
             print geoTrans, proj4
@@ -340,6 +382,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         self.inputLineEdit.clear()
         self.inputLineEdit.setText(self.inFileName)
         inFileNameSuffix  = QFileInfo(self.inFileName).suffix()
+        # FIXME: use gdal to test if netcdffile
         if inFileNameSuffix in ('nc', 'nc3', 'nc4'):
             self.isNetCDF = True
         self.updateFile()

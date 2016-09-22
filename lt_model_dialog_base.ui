@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>608</width>
-    <height>614</height>
+    <width>638</width>
+    <height>665</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -30,10 +30,13 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>220</y>
+     <y>260</y>
      <width>531</width>
      <height>20</height>
     </rect>
+   </property>
+   <property name="toolTip">
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;default units are 'mm hr-1'. To select other units, please install the &lt;a href=&quot;https://github.com/SciTools/cf_units&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;cf_units&lt;/span&gt;&lt;/a&gt; package. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
    <property name="orientation">
     <enum>Qt::Horizontal</enum>
@@ -43,7 +46,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>250</y>
+     <y>280</y>
      <width>91</width>
      <height>20</height>
     </rect>
@@ -56,7 +59,7 @@
    <property name="geometry">
     <rect>
      <x>260</x>
-     <y>290</y>
+     <y>320</y>
      <width>50</width>
      <height>20</height>
     </rect>
@@ -72,7 +75,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>290</y>
+     <y>320</y>
      <width>231</width>
      <height>20</height>
     </rect>
@@ -85,7 +88,7 @@
    <property name="geometry">
     <rect>
      <x>340</x>
-     <y>290</y>
+     <y>320</y>
      <width>141</width>
      <height>20</height>
     </rect>
@@ -98,7 +101,7 @@
    <property name="geometry">
     <rect>
      <x>530</x>
-     <y>290</y>
+     <y>320</y>
      <width>50</width>
      <height>20</height>
     </rect>
@@ -114,7 +117,7 @@
    <property name="geometry">
     <rect>
      <x>260</x>
-     <y>350</y>
+     <y>380</y>
      <width>50</width>
      <height>20</height>
     </rect>
@@ -130,7 +133,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>350</y>
+     <y>380</y>
      <width>231</width>
      <height>20</height>
     </rect>
@@ -143,7 +146,7 @@
    <property name="geometry">
     <rect>
      <x>260</x>
-     <y>320</y>
+     <y>350</y>
      <width>50</width>
      <height>20</height>
     </rect>
@@ -159,7 +162,7 @@
    <property name="geometry">
     <rect>
      <x>530</x>
-     <y>320</y>
+     <y>350</y>
      <width>50</width>
      <height>20</height>
     </rect>
@@ -175,7 +178,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>320</y>
+     <y>350</y>
      <width>231</width>
      <height>20</height>
     </rect>
@@ -188,7 +191,7 @@
    <property name="geometry">
     <rect>
      <x>340</x>
-     <y>320</y>
+     <y>350</y>
      <width>141</width>
      <height>20</height>
     </rect>
@@ -201,7 +204,7 @@
    <property name="geometry">
     <rect>
      <x>260</x>
-     <y>380</y>
+     <y>410</y>
      <width>171</width>
      <height>20</height>
     </rect>
@@ -217,7 +220,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>380</y>
+     <y>410</y>
      <width>231</width>
      <height>20</height>
     </rect>
@@ -230,7 +233,7 @@
    <property name="geometry">
     <rect>
      <x>260</x>
-     <y>410</y>
+     <y>440</y>
      <width>50</width>
      <height>20</height>
     </rect>
@@ -246,7 +249,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>410</y>
+     <y>440</y>
      <width>231</width>
      <height>20</height>
     </rect>
@@ -272,7 +275,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>440</y>
+     <y>470</y>
      <width>231</width>
      <height>20</height>
     </rect>
@@ -285,7 +288,7 @@
    <property name="geometry">
     <rect>
      <x>260</x>
-     <y>440</y>
+     <y>470</y>
      <width>50</width>
      <height>20</height>
     </rect>
@@ -301,7 +304,7 @@
    <property name="geometry">
     <rect>
      <x>260</x>
-     <y>470</y>
+     <y>500</y>
      <width>50</width>
      <height>20</height>
     </rect>
@@ -317,7 +320,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>470</y>
+     <y>500</y>
      <width>231</width>
      <height>20</height>
     </rect>
@@ -330,7 +333,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>500</y>
+     <y>530</y>
      <width>231</width>
      <height>20</height>
     </rect>
@@ -343,7 +346,7 @@
    <property name="geometry">
     <rect>
      <x>290</x>
-     <y>500</y>
+     <y>530</y>
      <width>16</width>
      <height>18</height>
     </rect>
@@ -359,7 +362,7 @@
    <property name="geometry">
     <rect>
      <x>340</x>
-     <y>350</y>
+     <y>380</y>
      <width>231</width>
      <height>20</height>
     </rect>
@@ -388,7 +391,7 @@
    <property name="geometry">
     <rect>
      <x>480</x>
-     <y>570</y>
+     <y>610</y>
      <width>110</width>
      <height>32</height>
     </rect>
@@ -401,7 +404,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>570</y>
+     <y>610</y>
      <width>110</width>
      <height>32</height>
     </rect>
@@ -502,7 +505,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>540</y>
+     <y>580</y>
      <width>16</width>
      <height>20</height>
     </rect>
@@ -518,7 +521,7 @@
    <property name="geometry">
     <rect>
      <x>50</x>
-     <y>540</y>
+     <y>580</y>
      <width>121</width>
      <height>20</height>
     </rect>
@@ -531,7 +534,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>520</y>
+     <y>550</y>
      <width>561</width>
      <height>20</height>
     </rect>
@@ -590,7 +593,7 @@
    <property name="geometry">
     <rect>
      <x>370</x>
-     <y>570</y>
+     <y>610</y>
      <width>110</width>
      <height>32</height>
     </rect>
@@ -603,13 +606,65 @@
    <property name="geometry">
     <rect>
      <x>230</x>
-     <y>570</y>
+     <y>610</y>
      <width>130</width>
      <height>32</height>
     </rect>
    </property>
    <property name="text">
     <string>Restore Defaults</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="units_text">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>225</y>
+     <width>141</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Output Units</string>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="unitsComboBox">
+   <property name="geometry">
+    <rect>
+     <x>120</x>
+     <y>220</y>
+     <width>211</width>
+     <height>30</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="cf_units_text">
+   <property name="geometry">
+    <rect>
+     <x>350</x>
+     <y>225</y>
+     <width>151</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>(requires cf_units module)</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="gaussian_text_2">
+   <property name="geometry">
+    <rect>
+     <x>200</x>
+     <y>130</y>
+     <width>281</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>(reproduces Fig 4c in Smith and Barstad (2004) if used with default values)</string>
+   </property>
+   <property name="wordWrap">
+    <bool>true</bool>
    </property>
   </widget>
  </widget>
