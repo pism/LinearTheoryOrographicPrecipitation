@@ -46,8 +46,28 @@ from linear_orog_precip import OrographicPrecipitation
 debug = True
 _units = ['days', 'hours', 'minutes', 'seconds', 'day', 'hour', 'minute', 'second']
 
+LOGGER = logging.getLogger('QGIS')
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'lt_model_dialog_base.ui'))
+
+
+def uniquify_list(seq, idfun=None):
+    '''
+    Remove duplicates from a list, order preserving.
+    From http://www.peterbe.com/plog/uniqifiers-benchmark
+    '''
+
+    if idfun is None:
+        def idfun(x): return x
+    seen = {}
+    result = []
+    for item in seq:
+        marker = idfun(item)
+        if marker in seen:
+            continue
+        seen[marker] = 1
+        result.append(item)
+    return result
 
 
 def get_all_raster_drivers():
@@ -329,16 +349,25 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         if ds is None:
             return
         if self.isNetCDF:
-            md = ds.GetMetadata("SUBDATASETS")
-            for key in sorted(md.iterkeys()):
-                #SUBDATASET_1_NAME=NETCDF:"file.nc":var
-                if re.match('^SUBDATASET_[0-9]+_NAME$', key) is None:
-                    continue
-                m = re.search('^(NETCDF:".+"):(.+)', md[key])
-                if m is None:
-                    continue
-                self.prefix = m.group(1)
-                self.variables.append(m.group(2))
+            if "SUBDATASETS" in ds.GetMetadata():
+                md = ds.GetMetadata("SUBDATASETS")
+                for key in sorted(md.iterkeys()):
+                    # SUBDATASET_1_NAME=NETCDF:"file.nc":var
+                    if re.match('^SUBDATASET_[0-9]+_NAME$', key) is None:
+                        continue
+                    m = re.search('^(NETCDF:".+"):(.+)', md[key])
+                    if m is None:
+                        continue
+                    self.prefix = m.group(1)
+                    self.variables.append(m.group(2))
+            else:
+                md = ds.GetMetadata()
+                my_vars = []
+                for key in sorted(md.iterkeys()):
+                    my_vars.append(key.split('#')[0])
+                my_vars = uniquify_list(my_vars)
+                for myvar in my_vars:
+                    self.variables.append(myvar)
         else:
             for band in range(ds.RasterCount):
                 band += 1
@@ -349,7 +378,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
 
         self.varsComboBox.blockSignals(True)
         self.varsComboBox.clear()
-        for var in self.variables:
+        for var in sorted(self.variables):
             self.varsComboBox.addItem(var)
         if self.isNetCDF:
             if debug:
@@ -439,70 +468,65 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
                     m = re.search('^(NETCDF_DIM_.+)=(.+)', line)
                     if m is not None:
                         dim_map[m.group(1)] = m.group(2)
-                    
-        if not 'NETCDF_DIM_EXTRA' in dim_map:
-            self.warning()
-            return
-        
-        tok = dim_map['NETCDF_DIM_EXTRA']
-        if debug:
-            print 'my tok ', tok
-        if tok is not None:
-            for dim in tok.split(','):
-                self.dim_names.append(dim)
-                tok2 = dim_map.get('NETCDF_DIM_' + dim + '_VALUES')
-                print 'my tok2 ', tok2
-                self.dim_values[dim] = []
-                if tok2 is not None:
-                    for s in tok2.split(','):
-                        self.dim_values[dim].append(num(s))
-                tok2 = dim_map.get('NETCDF_DIM_' + dim + '_DEF')
-                self.dim_def[ dim ] = []
-                if tok2 is not None:
-                    for s in tok2.split(','):
-                        self.dim_def[ dim ].append(num(s))
 
-        dim_names = self.dim_names
-        self.dim_names = []
-        for dim in dim_names:
-            self.dim_names.append(dim)
-        for dim in dim_names:
-            print 'is dim ', dim, 'dim_values ', self.dim_values[dim]
-            if dim in self.dim_values:
-                if (dim + "#units") in md:
-                    timestr = md[dim + "#units"]
-                    units = timestr.split()[0].lower()
-                    print timestr, units
-                    if (dim + "#calendar") in md:
-                        calendar = md[dim + "#calendar"]
-                        if calendar in ('none'):
-                            # PISMS writes 'none' as calendar
-                            calendar = '365_day'
-                        cdftime = utime(timestr, calendar=calendar)
-                    print self.dim_values[dim]
-                    if units in _units:
-                        try:
-                            dates = cdftime.num2date(self.dim_values[dim])
-                        except ValueError:
-                            continue
-                        self.dim_values2[dim] = []
-                        only_days = True
-                        for date in dates:
-                            val = date.strftime("%Y-%m-%d %H:%M:%S")
-                            if not val.endswith(" 00:00:00"):
-                                only_days = False
-                            self.dim_values2[dim].append(val)
-                        if only_days:
-                            for i in range(0,len(self.dim_values2[ dim ])):
-                                self.dim_values2[dim][i] = self.dim_values2[dim][i][0:10]
-        # print "dim_values2 {}".format(self.dim_values2)
-        # if debug>0:
-        #     print(str(dim_map))
-        #     print(str(self.dim_names))
-        #     print(str(self.dim_def))
-        #     print(str(self.dim_values))
-        #     print(str(self.dim_values2))
-        self.updateNetCDFTime()
+        if 'NETCDF_DIM_EXTRA' in dim_map:
+            
+            tok = dim_map['NETCDF_DIM_EXTRA']
+            if debug:
+                print 'my tok ', tok
+            if tok is not None:
+                for dim in tok.split(','):
+                    self.dim_names.append(dim)
+                    tok2 = dim_map.get('NETCDF_DIM_' + dim + '_VALUES')
+                    print 'my tok2 ', tok2
+                    self.dim_values[dim] = []
+                    if tok2 is not None:
+                        for s in tok2.split(','):
+                            self.dim_values[dim].append(num(s))
+                    tok2 = dim_map.get('NETCDF_DIM_' + dim + '_DEF')
+                    self.dim_def[ dim ] = []
+                    if tok2 is not None:
+                        for s in tok2.split(','):
+                            self.dim_def[ dim ].append(num(s))
+
+            dim_names = self.dim_names
+            self.dim_names = []
+            for dim in dim_names:
+                self.dim_names.append(dim)
+            for dim in dim_names:
+                print 'is dim ', dim, 'dim_values ', self.dim_values[dim]
+                if dim in self.dim_values:
+                    if (dim + "#units") in md:
+                        timestr = md[dim + "#units"]
+                        units = timestr.split()[0].lower()
+                        print timestr, units
+                        if (dim + "#calendar") in md:
+                            calendar = md[dim + "#calendar"]
+                            if calendar in ('none'):
+                                # PISMS writes 'none' as calendar
+                                calendar = '365_day'
+                            cdftime = utime(timestr, calendar=calendar)
+                        print self.dim_values[dim]
+                        if units in _units:
+                            try:
+                                dates = cdftime.num2date(self.dim_values[dim])
+                            except ValueError:
+                                continue
+                            self.dim_values2[dim] = []
+                            only_days = True
+                            for date in dates:
+                                val = date.strftime("%Y-%m-%d %H:%M:%S")
+                                if not val.endswith(" 00:00:00"):
+                                    only_days = False
+                                self.dim_values2[dim].append(val)
+                            if only_days:
+                                for i in range(0,len(self.dim_values2[ dim ])):
+                                    self.dim_values2[dim][i] = self.dim_values2[dim][i][0:10]
+            self.updateNetCDFTime()
+        else:
+            # No EXTRA dim found, has only 1 raster band
+            band = 1
+            self.rasterBand = band
 
 
     def updateNetCDFTime(self):
