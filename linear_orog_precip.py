@@ -122,9 +122,6 @@ class OrographicPrecipitation(object):
         # P_karot_denom = 1
         P_karot = np.divide(P_karot_num, P_karot_denom)
 
-        P_karot_amp = np.absolute(P_karot)  # get the amplitude
-        P_karot_angle = np.angle(P_karot)   # get the phase angle
-
         # Converting from wave domain back to space domain
         y3 = np.fft.ifft2(P_karot)
         spy = 31556925.9747
@@ -192,7 +189,52 @@ class ReadRaster(object):
         self.X, self.Y = np.meshgrid(self.easting, self.northing)
 
 
-def saveRaster(newRasterfn, geoTrans, proj4, array):
+class GdalFile(object):
+
+    '''
+    A class to read a GDAL File
+
+    Parameters
+    ----------
+
+    filename: a valid gdal file
+    '''
+
+    def __init__(self, file_name):
+        self.file_name = file_name
+        try:
+            print("\n  opening file %s" % file_name)
+            self.ds = gdal.Open(file_name)
+        except:
+            print("  could not open file %s" % file_name)
+
+        self.RasterArray = self.ds.ReadAsArray()
+        self.projection = self.ds.GetProjection()
+
+        geoT = self.ds.GetGeoTransform()
+        pxwidth = self.ds.RasterXSize
+        pxheight = self.ds.RasterYSize
+        ulx = geoT[0]
+        uly = geoT[3]
+        rezX = geoT[1]
+        rezY = geoT[5]
+        rx = ulx + pxwidth * rezX
+        ly = uly + pxheight * rezY
+        osr_ref = osr.SpatialReference()
+        osr_ref.ImportFromWkt(self.projection)
+        self.proj4 = osr_ref.ExportToProj4()
+
+        self.geoTrans = geoT
+        self.width = np.abs(pxwidth * rezX)
+        self.height = np.abs(pxheight * rezY)
+        self.center_x = ulx + pxwidth * rezX / 2
+        self.center_y = uly + pxheight * rezY / 2
+        self.easting = np.arange(ulx, rx + rezX, rezX)
+        self.northing = np.arange(ly, uly - rezY, -rezY)
+        self.X, self.Y = np.meshgrid(self.easting, self.northing)
+
+
+def array2raster(newRasterfn, geoTrans, proj4, units, array):
     '''
     Function to export geo-coded raster
 
@@ -204,10 +246,11 @@ def saveRaster(newRasterfn, geoTrans, proj4, array):
     cols = array.shape[1]
     rows = array.shape[0]
 
-    driver = gdal.GetDriverByName('GTiff')
+    driver = gdal.GetDriverByName('netCDF')
     outRaster = driver.Create(newRasterfn, cols, rows, 1, gdal.GDT_Float32)
-    outRaster.SetGeoTransform(geoTrans)
+    outRaster.SetGeoTransform((geoTrans))
     outband = outRaster.GetRasterBand(1)
+    outband.SetMetadata('units', units)
     outband.WriteArray(array)
     outRasterSRS = osr.SpatialReference()
     outRasterSRS.ImportFromProj4(proj4)
@@ -215,8 +258,9 @@ def saveRaster(newRasterfn, geoTrans, proj4, array):
     outband.FlushCache()
 
 
+
 if __name__ == "__main__":
-    print('Linear Orographic Precipitation Model by Smith & Barstad (2004)')
+    print('Linear Theory Orographic Precipitation Model by Smith & Barstad (2004)')
 
     import pylab as plt
     from matplotlib import cm

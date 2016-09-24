@@ -139,7 +139,10 @@
     </rect>
    </property>
    <property name="text">
-    <string>Moist Stability Frequency Nm (s-1)</string>
+    <string>Moist Stability Frequency N&lt;sub&gt;m&lt;/sub&gt; (s-1)</string>
+   </property>
+   <property name="textFormat">
+    <enum>Qt::AutoText</enum>
    </property>
   </widget>
   <widget class="QLineEdit" name="tau_c">
@@ -184,7 +187,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Conversion Time tau_c (s)</string>
+    <string>Conversion Time tau&lt;sub&gt;c&lt;/sub&gt; (s)</string>
    </property>
   </widget>
   <widget class="QLabel" name="tau_f_text">
@@ -197,7 +200,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Fallout Time tau_f (s)</string>
+    <string>Fallout Time tau&lt;sub&gt;f&lt;/sub&gt; (s)</string>
    </property>
   </widget>
   <widget class="QLineEdit" name="Cw">
@@ -226,7 +229,13 @@
     </rect>
    </property>
    <property name="text">
-    <string>Uplift Sensitivity Factor Cw (kg m-3)</string>
+    <string>Uplift Sensitivity Factor C&lt;sub&gt;w&lt;/sub&gt; (kg m-3)</string>
+   </property>
+   <property name="textFormat">
+    <enum>Qt::AutoText</enum>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QLineEdit" name="latitude">
@@ -368,14 +377,14 @@
     </rect>
    </property>
    <property name="text">
-    <string>Vapor Scale Height Hw (m)</string>
+    <string>Vapor Scale Height H&lt;sub&gt;w&lt;/sub&gt; (m)</string>
    </property>
   </widget>
   <widget class="QLineEdit" name="Hw">
    <property name="geometry">
     <rect>
      <x>530</x>
-     <y>350</y>
+     <y>380</y>
      <width>50</width>
      <height>20</height>
     </rect>
@@ -459,7 +468,7 @@
     </rect>
    </property>
   </widget>
-  <widget class="QLabel" name="input_raster_text_2">
+  <widget class="QLabel" name="gaussian_text">
    <property name="geometry">
     <rect>
      <x>20</x>

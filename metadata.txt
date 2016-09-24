@@ -7,18 +7,14 @@
 # This file should be included when you package your plugin.# Mandatory items:
 
 [general]
-name=Orographic Precipitation Model
+name=Linear Theory of Orographic Precipitation Model
 qgisMinimumVersion=2.8
 description=A plugin that implements the Smith & Barstad (2004) LT model.
 version=0.1
 author=Andy Aschwanden
 email=andy.aschwanden@gmail.com
 
-about=This plugin implements the Linear Theory of Orographic Preciptation model by Smith and Barstad (2004). The model includes airflow dynamics, condensed water advection, and downslope evaporation. Vertically integrated steady-state governing equations for condensed water are solved using Fourier transform techniques. The precipitation field is computed quickly by multiplying the terrain transform by a wavenumber-dependent transfer function.
-
-Input can be (almost) any GDAL-readable raster, but output is currently limited to GTiff.
-
-If no input raster is given (check "gaussian bump" box), the default parameters will reproduce Figure 4c in the Smith and Barstad paper.
+about=This plugin implements the Linear Theory of Orographic Preciptation model by Smith and Barstad (2004). The model includes airflow dynamics, condensed water advection, and downslope evaporation. Vertically integrated steady-state governing equations for condensed water are solved using Fourier transform techniques. The precipitation field is computed quickly by multiplying the terrain transform by a wavenumber-dependent transfer function. Input can be (almost) any GDAL-readable raster, but output is currently limited to GTiff. If no input raster is given (check gaussian bump box), the default parameters will reproduce Figure 4c in the Smith and Barstad paper.
 
 tracker=https://github.com/aaschwanden/LinearTheoryOrographicPrecipitation/issues
 repository=https://github.com/aaschwanden/LinearTheoryOrographicPrecipitation

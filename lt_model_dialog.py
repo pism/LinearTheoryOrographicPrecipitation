@@ -71,7 +71,7 @@ _units = [
 LOGGER = logging.getLogger('QGIS')
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'lt_model_dialog_base.ui'))
-
+debug = False
 
 def uniquify_list(seq, idfun=None):
     '''
