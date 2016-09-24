@@ -23,9 +23,23 @@
 
 import os
 
-from PyQt4 import QtGui, uic
-from PyQt4.QtCore import QFileInfo
+# QWdiget bug has issues with uic importing, the except should be removed
+# once this is fixed.
+try:
+    # QGIS VERSION >= 2.14
+    from qgis.PyQt import QtGui, QtCore, uic
+    from qgis.PyQt.QtCore import QFileInfo
+    f
+except:
+    from PyQt4 import QtGui, QtCore, uic
+    from PyQt4.QtCore import QFileInfo
+    
 from qgis.utils import iface
+
+try:
+    _fromUtf8 = QtCore.QString.fromUtf8
+except AttributeError:
+    _fromUtf8 = lambda s: s
 
 import logging
 import re, math
@@ -394,14 +408,14 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
 
     def showOpenDialog(self):
         self.timesComboBox.setDisabled(True)
-        fileName = str(QtGui.QFileDialog.getOpenFileName(self,
+        fileName = _fromUtf8(QtGui.QFileDialog.getOpenFileName(self,
                                                         "Input Raster File:"))
 
         if len(fileName) is not 0:
             self.inFileName = fileName;
 
         gdal.AllRegister()
-        dataset = gdal.Open(str(self.inFileName))
+        dataset = gdal.Open(_fromUtf8(self.inFileName))
         self.rasterBands = dataset.RasterCount
         dataset = None
 
@@ -438,7 +452,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         self.uri = uri
 
         if debug>0:
-            print('updateVariable ' + str(uri))
+            print('updateVariable ' + _fromUtf8(uri))
 
         #look for extra dim definitions
         #  NETCDF_DIM_EXTRA={time,tile}
@@ -544,7 +558,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         self.timesComboBox.blockSignals(False)
         self.update_time()
         if debug:
-            print('done updateNetCDFTime ' + str(item))
+            print('done updateNetCDFTime ' + _fromUtf8(item))
 
 
     def showSaveDialog(self):
@@ -560,7 +574,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         else:
             # Extract the base filename without the suffix if it exists
             # Convert the fileName from QString to python string
-            fileNameStr = str(fileName)
+            fileNameStr = _fromUtf8(fileName)
 
             # Split the fileNameStr where/if a '.' exists
             splittedFileName = fileNameStr.split('.')
@@ -582,7 +596,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
 
             # Extract the suffix from the selected filetype filter
             # Convert the selected filter from QString to python string
-            filterStr = str(filter)
+            filterStr = _fromUtf8(filter)
 
             # Split the filter string where/if an asterisk (*) exists
             # I do this to find where the first suffix of the selected filetype

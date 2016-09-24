@@ -41,7 +41,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'LinearTheoryOrographicPrecipitation'
-copyright = u'2013, Andy Aschwanden'
+copyright = u'2016, Andy Aschwanden'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
