@@ -36,7 +36,6 @@ try:
     # QGIS VERSION >= 2.14
     from qgis.PyQt import QtGui, QtCore, uic
     from qgis.PyQt.QtCore import QFileInfo
-    f
 except:
     from PyQt4 import QtGui, QtCore, uic
     from PyQt4.QtCore import QFileInfo
@@ -88,7 +87,8 @@ fh.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
 # create formatter
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(module)s:%(lineno)d - %(message)s')
+formatter = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(module)s:%(lineno)d - %(message)s')
 
 # add formatter to ch and fh
 ch.setFormatter(formatter)
@@ -100,7 +100,6 @@ logger.addHandler(fh)
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'lt_model_dialog_base.ui'))
-debug = False
 
 
 def uniquify_list(seq, idfun=None):
@@ -138,8 +137,7 @@ def get_all_raster_drivers():
 def readRaster(uri, rasterBand):
     proj4 = None
     gdal.AllRegister()
-    if debug:
-        print('readRaster: Open uri {} and band {}'.format(uri, rasterBand))
+    logger.debug('readRaster: Open uri {} and band {}'.format(uri, rasterBand))
     ds = gdal.Open(uri)
     rb = ds.GetRasterBand(rasterBand)
     RasterArray = rb.ReadAsArray()
@@ -162,8 +160,7 @@ def readRaster(uri, rasterBand):
     easting = np.arange(ulx, rx + rezX, rezX)
     northing = np.arange(ly, uly - rezY, -rezY)
     X, Y = np.meshgrid(easting, northing)
-    if debug:
-        print('readRaster: geoTrans {} and proj4 {}'.format(geoTrans, proj4))
+    logger.debug('readRaster: geoTrans {} and proj4 {}'.format(geoTrans, proj4))
 
     return X, Y, RasterArray, geoTrans, proj4
 
@@ -179,8 +176,6 @@ def saveRaster(newRasterfn, geoTrans, proj4, array):
 
     cols = array.shape[1]
     rows = array.shape[0]
-    if debug:
-        print cols, rows
     driver = gdal.GetDriverByName('GTiff')
     outRaster = driver.Create(newRasterfn, cols, rows, 1, gdal.GDT_Float32)
     outRaster.SetGeoTransform(geoTrans)
@@ -209,7 +204,8 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         # self.<objectname>, and you can use autoconnect slots - see
         # http://qt-project.org/doc/qt-4.8/designer-using-a-ui-file.html
         # #widgets-and-dialogs-with-auto-connect
-        logger.info('Initializing instance of LinearOrographicPrecipitationDialog')
+        logger.info(
+            'Initializing instance of LinearOrographicPrecipitationDialog')
         self.inFileName = None
         self.outFileName = None
         self.prefix = ''
@@ -223,7 +219,8 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         self.configUI()
         self.physical_constants = dict()
         self.connectSignals()
-        logger.info('Finished initializing instance of LinearOrographicPrecipitationDialog')
+        logger.info(
+            'Finished initializing instance of LinearOrographicPrecipitationDialog')
 
     def configUI(self):
         logger.info('Running configUI')
@@ -251,8 +248,6 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         logger.info('Running setupUnitsComboBox')
         self.unitsComboBox.addItem('mm hr-1')
         self.out_units = self.unitsComboBox.currentText()
-        if debug:
-            print self.out_units
         if hasCFunits:
             self.unitsComboBox.addItem('mm s-1')
             self.unitsComboBox.addItem('mm yr-1')
@@ -297,12 +292,12 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         self.unitsComboBox.setCurrentIndex(0)
 
     def update_units(self):
-        logger.info('Running update_units')        
+        logger.info('Running update_units')
         self.out_units = self.unitsComboBox.currentText()
 
     def update_variable(self):
         logger.info('Running update_variable')
-        logger.debug('isnetCDF = '.format(self.isNetCDF))        
+        logger.debug('isnetCDF = '.format(self.isNetCDF))
         if self.isNetCDF:
             self.updateNetCDFVariable()
         else:
@@ -312,8 +307,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         logger.info('Running update_time')
         # GDAL rasterBands are 1 indexed
         self.rasterBand = self.timesComboBox.currentIndex() + 1
-        if debug:
-            print 'update_time: current rasterBand is {}'.format(self.rasterBand)
+        logger.debug('update_time: current rasterBand is {}'.format(self.rasterBand))
 
     def run(self):
         logger.info('Running run')
@@ -743,7 +737,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
             self.outFileNameSuffixStr = suffixStr
 
         if (self.inFileName is not None or self.gaussianCheckBox.isChecked()
-            ) and self.outFileName is not None:
+                ) and self.outFileName is not None:
             self.runButton.setDisabled(False)
         self.outputLineEdit.clear()
         self.outputLineEdit.setText(self.outFileName)

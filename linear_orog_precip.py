@@ -44,10 +44,12 @@ class OrographicPrecipitation(object):
         pad = int(np.ceil(((self.nx + self.ny) / 2) / 100)) * 100
         if pad > pad_max:
             pad = pad_max
-        logger.debug('Raster shape before padding ({},{})'.format(self.nx, self.ny))
+        logger.debug(
+            'Raster shape before padding ({},{})'.format(
+                self.nx, self.ny))
         Orography = np.pad(self.Orography, pad, 'constant')
         nx, ny = Orography.shape
-        logger.debug('Raster shape after padding ({},{})'.format(nx, ny))
+        logger.debug('Raster shape after padding ({},{})'.format(ny, nx))
         logger.info('Fourier transform orography')
         Orography_fft = np.fft.fft2(Orography)
         dx = self.dx
