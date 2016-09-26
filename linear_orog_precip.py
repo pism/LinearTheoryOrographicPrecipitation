@@ -2,6 +2,8 @@ from scipy.fftpack import fft2, fftfreq
 import numpy as np
 import cmath
 from osgeo import gdal, osr
+import logging
+logger = logging.getLogger('LTOP')
 
 
 class OrographicPrecipitation(object):
@@ -34,20 +36,22 @@ class OrographicPrecipitation(object):
         else:
             self.P_units = 'mm hr-1'
 
-    @profile
     def _compute_precip(self, ounits):
-
+        logger.info('Running _compute_precip')
         physical_constants = self.physical_constants
         eps = 1e-18
         pad_max = 200
         pad = int(np.ceil(((self.nx + self.ny) / 2) / 100)) * 100
         if pad > pad_max:
             pad = pad_max
+        logger.debug('Raster shape before padding ({},{})'.format(self.nx, self.ny))
         Orography = np.pad(self.Orography, pad, 'constant')
+        nx, ny = Orography.shape
+        logger.debug('Raster shape after padding ({},{})'.format(nx, ny))
+        logger.info('Fourier transform orography')
         Orography_fft = np.fft.fft2(Orography)
         dx = self.dx
         dy = self.dy
-        nx, ny = Orography.shape
         x_n_value = np.fft.fftfreq(
             ny, (1.0 / ny))
         y_n_value = np.fft.fftfreq(nx, (1.0 / nx))
@@ -68,6 +72,7 @@ class OrographicPrecipitation(object):
         # Intrinsic frequency sigma = U*k + V*l
         u0 = physical_constants['u']
         v0 = physical_constants['v']
+        logger.info('Calculate sigma')
         sigma = np.add(np.multiply(kx, u0), np.multiply(ky, v0))
         sigma_sqr_reg = sigma ** 2
         m_denom = np.power(sigma, 2.) - physical_constants['f']**2
@@ -104,6 +109,7 @@ class OrographicPrecipitation(object):
             m_denom)
         m2 = np.add(np.power(kx, 2.), np.power(ky, 2.))
         m_sqr = np.multiply(m1, m2)
+        logger.info('Calculating m')
         m = np.sqrt(-1 * m_sqr)
         # Regularization
         m[np.logical_and(m_sqr >= 0, sigma == 0)] = np.sqrt(
@@ -126,23 +132,30 @@ class OrographicPrecipitation(object):
         P_karot = np.divide(P_karot_num, P_karot_denom)
 
         # Converting from wave domain back to space domain
+        logger.info('Performing inverse Fourier transform')
         P = np.fft.ifft2(P_karot)
         spy = 31556925.9747
+        logger.info('De-pad array')
         P = P[pad:-pad, pad:-pad]
         P = np.multiply(np.real(P), 3600)   # mm hr-1
         # Add background precip
-        P += physical_constants['P0']
+        P0 = physical_constants['P0']
+        logger.info('Adding background precpipitation {} mm hr-1'.format(P0))
+        P += P0
         # Truncation
         truncate = self.truncate
         if truncate is True:
+            logger.info('Truncate precipitation')
             P[P < 0] = 0
         P_scale = physical_constants['P_scale']
+        logger.info('Scale precipitation P = P * {}'.format(P_scale))
         P *= P_scale
 
         if ounits is not None:
             import cf_units
             in_units = cf_units.Unit('mm hr-1')
             out_units = cf_units.Unit(ounits)
+            logger.info('Converting mm hr-1 to {}'.format(ounits))
             P = in_units.convert(P, out_units)
         return P
 

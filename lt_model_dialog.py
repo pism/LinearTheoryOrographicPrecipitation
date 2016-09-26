@@ -75,10 +75,33 @@ _units = [
     'minute',
     'second']
 
-LOGGER = logging.getLogger('QGIS')
+
+# create logger
+logger = logging.getLogger('LTOP')
+logger.setLevel(logging.DEBUG)
+
+# create file handler which logs even debug messages
+# fh = logging.RotatingFileHandler('/Users/andy/ltop.log')
+fh = logging.StreamHandler()
+fh.setLevel(logging.DEBUG)
+# create console handler with a higher log level
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+# create formatter
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(module)s:%(lineno)d - %(message)s')
+
+# add formatter to ch and fh
+ch.setFormatter(formatter)
+fh.setFormatter(formatter)
+
+# add ch to logger
+logger.addHandler(ch)
+logger.addHandler(fh)
+
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'lt_model_dialog_base.ui'))
 debug = False
+
 
 def uniquify_list(seq, idfun=None):
     '''
@@ -186,6 +209,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         # self.<objectname>, and you can use autoconnect slots - see
         # http://qt-project.org/doc/qt-4.8/designer-using-a-ui-file.html
         # #widgets-and-dialogs-with-auto-connect
+        logger.info('Initializing instance of LinearOrographicPrecipitationDialog')
         self.inFileName = None
         self.outFileName = None
         self.prefix = ''
@@ -199,8 +223,10 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         self.configUI()
         self.physical_constants = dict()
         self.connectSignals()
+        logger.info('Finished initializing instance of LinearOrographicPrecipitationDialog')
 
     def configUI(self):
+        logger.info('Running configUI')
         self.restoreDefaults()
         self.inputLineEdit.setReadOnly(True)
         self.outputLineEdit.setReadOnly(True)
@@ -209,6 +235,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         self.setupUnitsComboBox()
 
     def connectSignals(self):
+        logger.info('Running connectSignals')
         self.closeButton.clicked.connect(self.close)
         self.runButton.clicked.connect(self.run)
         self.inputButton.clicked.connect(self.showOpenDialog)
@@ -221,6 +248,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         self.unitsComboBox.currentIndexChanged.connect(self.update_units)
 
     def setupUnitsComboBox(self):
+        logger.info('Running setupUnitsComboBox')
         self.unitsComboBox.addItem('mm hr-1')
         self.out_units = self.unitsComboBox.currentText()
         if debug:
@@ -235,6 +263,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
             self.cf_units_text.clear()
 
     def restoreDefaults(self):
+        logger.info('Running restoreDefaults')
         defaults_file = os.path.join(self.plugin_dir, 'default_constants.json')
         with open(defaults_file, 'r') as jsonfile:
             defaults = json.load(jsonfile)
@@ -247,6 +276,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         self.P_scale.setText(str(defaults['P_scale']))
 
     def reset(self):
+        logger.info('Running reset')
         self.restoreDefaults
         self.inFileName = None
         self.outFileName = None
@@ -267,22 +297,27 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         self.unitsComboBox.setCurrentIndex(0)
 
     def update_units(self):
+        logger.info('Running update_units')        
         self.out_units = self.unitsComboBox.currentText()
 
     def update_variable(self):
+        logger.info('Running update_variable')
+        logger.debug('isnetCDF = '.format(self.isNetCDF))        
         if self.isNetCDF:
             self.updateNetCDFVariable()
         else:
             self.updateRasterBand()
 
     def update_time(self):
+        logger.info('Running update_time')
         # GDAL rasterBands are 1 indexed
         self.rasterBand = self.timesComboBox.currentIndex() + 1
         if debug:
             print 'update_time: current rasterBand is {}'.format(self.rasterBand)
 
     def run(self):
-
+        logger.info('Running run')
+        logger.debug('Preparing physical_constants dict')
         Cw = self.get_Cw()
         Hw = self.get_Hw()
         latitude = self.get_latitude()
@@ -323,6 +358,8 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         else:
             X, Y, Orography, geoTrans, proj4 = readRaster(
                 self.uri, self.rasterBand)
+        logger.info('Calling OrographicPrecipitation')
+        logger.debug('hasCFunits = {}'.format(hasCFunits))
         if hasCFunits:
             OP = OrographicPrecipitation(
                 X,
