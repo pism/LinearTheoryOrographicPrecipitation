@@ -95,7 +95,7 @@ ch.setFormatter(formatter)
 fh.setFormatter(formatter)
 
 # add ch to logger
-logger.addHandler(ch)
+#logger.addHandler(ch)
 logger.addHandler(fh)
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
@@ -369,9 +369,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
                 Orography,
                 physical_constants,
                 truncate=self.truncateCheckBox.isChecked())
-        if debug:
-            print OP.P
-            print geoTrans, proj4
+        logger.debug('run: geoTrans {} and proj4 {}'.format(geoTrans, proj4))
         outFileName = self.outFileName
         saveRaster(outFileName, geoTrans, proj4, OP.P)
         if self.addResultCheckBox.isChecked():
@@ -381,8 +379,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         self.close()
 
     def updateURI(self):
-        if debug:
-            print('updateURI')
+        logger.info('updateURI')
         # update URI
         fileInfo = QFileInfo(self.inFileName)
         if self.isNetCDF:
@@ -404,9 +401,9 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
             self.timesComboBox.setDisabled(True)
 
     def updateFile(self):
+        logger.info('updateFile')
         fileName = self.inFileName
-        if debug:
-            print('updateFile ' + fileName)
+        logger.info('updateFile ' + fileName)
         if fileName == '':
             return
 
@@ -419,7 +416,9 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         if ds is None:
             return
         if self.isNetCDF:
+            logger.debug(ds.GetMetadata())
             if "SUBDATASETS" in ds.GetMetadata():
+                logger.debug('ds has SUBDATASETS')
                 md = ds.GetMetadata("SUBDATASETS")
                 for key in sorted(md.iterkeys()):
                     # SUBDATASET_1_NAME=NETCDF:"file.nc":var
@@ -431,6 +430,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
                     self.prefix = m.group(1)
                     self.variables.append(m.group(2))
             else:
+                logger.debug('ds has no SUBDATASETS')
                 md = ds.GetMetadata()
                 my_vars = []
                 for key in sorted(md.iterkeys()):
@@ -451,15 +451,11 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         for var in sorted(self.variables):
             self.varsComboBox.addItem(var)
         if self.isNetCDF:
-            if debug:
-                print 'update netCDFVariable'
             self.updateNetCDFVariable()
         else:
             self.updateRasterBand()
         self.varsComboBox.blockSignals(False)
 
-        if debug:
-            print('done updateFile ' + fileName)
 
     def showOpenDialog(self):
         self.timesComboBox.setDisabled(True)
@@ -505,8 +501,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         uri = 'NETCDF:"%s":%s' % (self.inFileName, self.netCDFVariable)
         self.uri = uri
 
-        if debug > 0:
-            print('updateVariable ' + _fromUtf8(uri))
+        logger.info('updateVariable ' + _fromUtf8(uri))
 
         # look for extra dim definitions
         #  NETCDF_DIM_EXTRA={time,tile}

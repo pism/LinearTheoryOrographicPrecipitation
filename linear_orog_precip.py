@@ -5,10 +5,13 @@ from osgeo import gdal, osr
 import logging
 logger = logging.getLogger('LTOP')
 
+np.seterr(divide='ignore', invalid='ignore')
+
 
 class OrographicPrecipitation(object):
 
-    """Calculates orographic precipitation following Smith & Barstad (2004).
+    """
+    Calculates orographic precipitation following Smith & Barstad (2004).
 
     """
 
@@ -207,51 +210,6 @@ class ReadRaster(object):
         self.X, self.Y = np.meshgrid(self.easting, self.northing)
 
 
-class GdalFile(object):
-
-    '''
-    A class to read a GDAL File
-
-    Parameters
-    ----------
-
-    filename: a valid gdal file
-    '''
-
-    def __init__(self, file_name):
-        self.file_name = file_name
-        try:
-            print("\n  opening file %s" % file_name)
-            self.ds = gdal.Open(file_name)
-        except:
-            print("  could not open file %s" % file_name)
-
-        self.RasterArray = self.ds.ReadAsArray()
-        self.projection = self.ds.GetProjection()
-
-        geoT = self.ds.GetGeoTransform()
-        pxwidth = self.ds.RasterXSize
-        pxheight = self.ds.RasterYSize
-        ulx = geoT[0]
-        uly = geoT[3]
-        rezX = geoT[1]
-        rezY = geoT[5]
-        rx = ulx + pxwidth * rezX
-        ly = uly + pxheight * rezY
-        osr_ref = osr.SpatialReference()
-        osr_ref.ImportFromWkt(self.projection)
-        self.proj4 = osr_ref.ExportToProj4()
-
-        self.geoTrans = geoT
-        self.width = np.abs(pxwidth * rezX)
-        self.height = np.abs(pxheight * rezY)
-        self.center_x = ulx + pxwidth * rezX / 2
-        self.center_y = uly + pxheight * rezY / 2
-        self.easting = np.arange(ulx, rx + rezX, rezX)
-        self.northing = np.arange(ly, uly - rezY, -rezY)
-        self.X, self.Y = np.meshgrid(self.easting, self.northing)
-
-
 def array2raster(newRasterfn, geoTrans, proj4, units, array):
     '''
     Function to export geo-coded raster
@@ -298,7 +256,6 @@ if __name__ == "__main__":
     # create formatter
     formatter = logging.Formatter(
         '%(asctime)s - %(name)s - %(levelname)s - %(module)s:%(lineno)d - %(message)s')
-
     # add formatter to ch and fh
     ch.setFormatter(formatter)
     fh.setFormatter(formatter)
@@ -355,7 +312,7 @@ if __name__ == "__main__":
     P_scale = options.P_scale
 
     if in_file is not None:
-        gd = GdalFile(in_file)
+        gd = ReadRaster(in_file)
         X = gd.X
         Y = gd.Y
         Orography = gd.RasterArray
