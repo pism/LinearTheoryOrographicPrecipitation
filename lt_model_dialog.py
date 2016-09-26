@@ -416,9 +416,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
         if ds is None:
             return
         if self.isNetCDF:
-            logger.debug(ds.GetMetadata())
-            if "SUBDATASETS" in ds.GetMetadata():
-                logger.debug('ds has SUBDATASETS')
+            try:
                 md = ds.GetMetadata("SUBDATASETS")
                 for key in sorted(md.iterkeys()):
                     # SUBDATASET_1_NAME=NETCDF:"file.nc":var
@@ -429,12 +427,13 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
                         continue
                     self.prefix = m.group(1)
                     self.variables.append(m.group(2))
-            else:
-                logger.debug('ds has no SUBDATASETS')
+            except:
                 md = ds.GetMetadata()
                 my_vars = []
                 for key in sorted(md.iterkeys()):
-                    my_vars.append(key.split('#')[0])
+                    ncvar = key.split('#')[0]
+                    if ncvar not in ('NC_GLOBAL'):
+                        my_vars.append(ncvar)
                 my_vars = uniquify_list(my_vars)
                 for myvar in my_vars:
                     self.variables.append(myvar)
