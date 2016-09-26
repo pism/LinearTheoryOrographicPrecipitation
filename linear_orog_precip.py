@@ -34,21 +34,26 @@ class OrographicPrecipitation(object):
         else:
             self.P_units = 'mm hr-1'
 
+    @profile
     def _compute_precip(self, ounits):
 
         physical_constants = self.physical_constants
+        eps = 1e-18
+        pad_max = 200
         pad = int(np.ceil(((self.nx + self.ny) / 2) / 100)) * 100
+        if pad > pad_max:
+            pad = pad_max
         Orography = np.pad(self.Orography, pad, 'constant')
         Orography_fft = np.fft.fft2(Orography)
         dx = self.dx
         dy = self.dy
         nx, ny = Orography.shape
         x_n_value = np.fft.fftfreq(
-            len(Orography[1, :]), (1.0 / len(Orography[1, :])))
-        y_n_value = np.fft.fftfreq(len(Orography), (1.0 / len(Orography)))
+            ny, (1.0 / ny))
+        y_n_value = np.fft.fftfreq(nx, (1.0 / nx))
 
-        x_len = len(Orography) * dx
-        y_len = len(Orography[1, :]) * dy
+        x_len = nx * dx
+        y_len = ny * dy
         kx_line = np.divide(np.multiply(2.0 * np.pi, x_n_value), x_len)
         ky_line = np.divide(
             np.multiply(
@@ -64,8 +69,9 @@ class OrographicPrecipitation(object):
         u0 = physical_constants['u']
         v0 = physical_constants['v']
         sigma = np.add(np.multiply(kx, u0), np.multiply(ky, v0))
-        eps = 1e-18
         sigma_sqr_reg = sigma ** 2
+        m_denom = np.power(sigma, 2.) - physical_constants['f']**2
+
         sigma_sqr_reg[
             np.logical_and(
                 np.fabs(sigma_sqr_reg) < eps,
@@ -79,17 +85,15 @@ class OrographicPrecipitation(object):
 
         # The vertical wave number
         # Eqn. 12
-        m_denom = np.power(sigma, 2.) - physical_constants['f']**2
         # Regularization
-        m_reg = 1e-18
         m_denom[
             np.logical_and(
-                np.fabs(m_denom) < m_reg,
-                np.fabs(m_denom) >= 0)] = m_reg
+                np.fabs(m_denom) < eps,
+                np.fabs(m_denom) >= 0)] = eps
         m_denom[
             np.logical_and(
-                np.fabs(m_denom) < m_reg,
-                np.fabs(m_denom) < 0)] = -m_reg
+                np.fabs(m_denom) < eps,
+                np.fabs(m_denom) < 0)] = -eps
 
         m1 = np.divide(
             np.subtract(
@@ -119,14 +123,13 @@ class OrographicPrecipitation(object):
         P_karot_denom = np.multiply(
             P_karot_denom_Hw, np.multiply(
                 P_karot_denom_tauc, P_karot_denom_tauf))
-        # P_karot_denom = 1
         P_karot = np.divide(P_karot_num, P_karot_denom)
 
         # Converting from wave domain back to space domain
-        y3 = np.fft.ifft2(P_karot)
+        P = np.fft.ifft2(P_karot)
         spy = 31556925.9747
-        P = np.multiply(np.real(y3), 3600)   # mm hr-1
         P = P[pad:-pad, pad:-pad]
+        P = np.multiply(np.real(P), 3600)   # mm hr-1
         # Add background precip
         P += physical_constants['P0']
         # Truncation
@@ -258,15 +261,36 @@ def array2raster(newRasterfn, geoTrans, proj4, units, array):
     outband.FlushCache()
 
 
-
 if __name__ == "__main__":
     print('Linear Theory Orographic Precipitation Model by Smith & Barstad (2004)')
 
-    import pylab as plt
-    from matplotlib import cm
     import itertools
     from argparse import ArgumentParser
 
+    import logging
+    import logging.handlers
+
+    # create logger
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+
+    # create file handler which logs even debug messages
+    fh = logging.handlers.RotatingFileHandler('ltop.log')
+    fh.setLevel(logging.DEBUG)
+    # create console handler with a higher log level
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.ERROR)
+    # create formatter
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(module)s:%(lineno)d - %(message)s')
+
+    # add formatter to ch and fh
+    ch.setFormatter(formatter)
+    fh.setFormatter(formatter)
+
+    # add ch to logger
+    logger.addHandler(ch)
+    logger.addHandler(fh)
     parser = ArgumentParser()
     parser.add_argument('-i', dest='in_file',
                         help='Gdal-readable DEM', default=None)
@@ -349,8 +373,6 @@ if __name__ == "__main__":
     physical_constants['u'] = -np.sin(direction * 2 * np.pi / 360) * magnitude
     # y-component of wind vector [m s-1]
     physical_constants['v'] = np.cos(direction * 2 * np.pi / 360) * magnitude
-    # physical_constants['u'] = -15    # x-component of wind vector [m s-1]
-    # physical_constants['v'] = 0   # y-component of wind vector [m s-1]
     physical_constants['P0'] = P0   # background precip [mm hr-1]
     physical_constants['P_scale'] = P_scale   # precip scale factor [1]
 

@@ -19,6 +19,13 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
+
+NOTE:
+
+Several functions, including, but not limited to, updateFile and updateVariable
+are adaptions of the functions found in the netcdfbrowser plugin
+(https://github.com/etiennesky/netcdfbrowser). Credit for these funtions is due
+to Etienne Tourigny (etourigny.dev@gmail.com).
 """
 
 import os
@@ -366,7 +373,6 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
             self.timesComboBox.setDisabled(True)
 
     def updateFile(self):
-        # self.clear()
         fileName = self.inFileName
         if debug:
             print('updateFile ' + fileName)
