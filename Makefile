@@ -49,7 +49,7 @@ PY_FILES = \
 
 UI_FILES = lt_model_dialog_base.ui
 
-EXTRAS = metadata.txt icon.png default_constants.json
+EXTRAS = metadata.txt icon.png default_constants.json lt_1eqn_fourier.png lt_m.png
 
 COMPILED_RESOURCE_FILES = resources.py
 

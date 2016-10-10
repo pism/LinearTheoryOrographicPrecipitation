@@ -234,6 +234,7 @@ class LinearTheoryOrographicPrecipitationDialog(QtGui.QDialog, FORM_CLASS):
     def connectSignals(self):
         logger.info('Running connectSignals')
         self.closeButton.clicked.connect(self.close)
+        self.closeButton_help.clicked.connect(self.close)
         self.runButton.clicked.connect(self.run)
         self.inputButton.clicked.connect(self.showOpenDialog)
         self.outputButton.clicked.connect(self.showSaveDialog)
