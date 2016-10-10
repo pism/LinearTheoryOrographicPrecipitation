@@ -94,7 +94,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Wind Speed (m/s)</string>
+    <string>Wind Speed (m s&lt;sup&gt;-1&lt;/sup&gt;)</string>
    </property>
   </widget>
   <widget class="QLineEdit" name="wind_speed">
@@ -139,7 +139,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Moist Stability Frequency N&lt;sub&gt;m&lt;/sub&gt; (s-1)</string>
+    <string>Moist Stability Frequency N&lt;sub&gt;m&lt;/sub&gt; (s&lt;sup&gt;-1&lt;/sup&gt;)</string>
    </property>
    <property name="textFormat">
     <enum>Qt::AutoText</enum>
@@ -229,7 +229,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Uplift Sensitivity Factor C&lt;sub&gt;w&lt;/sub&gt; (kg m-3)</string>
+    <string>Uplift Sensitivity Factor C&lt;sub&gt;w&lt;/sub&gt; (kg m&lt;sup&gt;-3&lt;/sup&gt;)</string>
    </property>
    <property name="textFormat">
     <enum>Qt::AutoText</enum>
@@ -290,7 +290,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Background Precipitation (mm hr-1)</string>
+    <string>Background Precipitation (mm hr&lt;sup&gt;-1&lt;/sup&gt;)</string>
    </property>
   </widget>
   <widget class="QLineEdit" name="P0">
