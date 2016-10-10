@@ -23,7 +23,7 @@
     </rect>
    </property>
    <property name="currentIndex">
-    <number>1</number>
+    <number>0</number>
    </property>
    <widget class="QWidget" name="lt_model">
     <attribute name="title">
@@ -716,7 +716,7 @@
       <string/>
      </property>
      <property name="pixmap">
-      <pixmap>lt_1eqn_fourier.png</pixmap>
+      <pixmap resource="resources.qrc">:/plugins/LinearTheoryOrographicPrecipitation/lt_1eqn_fourier.png</pixmap>
      </property>
     </widget>
     <widget class="QLabel" name="tau_c_text_2">
@@ -825,7 +825,7 @@
       <string/>
      </property>
      <property name="pixmap">
-      <pixmap>lt_m.png</pixmap>
+      <pixmap resource="resources.qrc">:/plugins/LinearTheoryOrographicPrecipitation/lt_m.png</pixmap>
      </property>
     </widget>
     <widget class="QLabel" name="Cw_text_4">

@@ -29,7 +29,6 @@ to Etienne Tourigny (etourigny.dev@gmail.com).
 """
 
 import os
-
 # QWdiget bug has issues with uic importing, the except should be removed
 # once this is fixed.
 try:
