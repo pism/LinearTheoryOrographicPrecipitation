@@ -43,10 +43,7 @@ class OrographicPrecipitation(object):
         logger.info('Running _compute_precip')
         physical_constants = self.physical_constants
         eps = 1e-18
-        pad_max = 200
-        pad = int(np.ceil(((self.nx + self.ny) / 2) / 100)) * 100
-        if pad > pad_max:
-            pad = pad_max
+        pad = 250
         logger.debug(
             'Raster shape before padding ({},{})'.format(
                 self.nx, self.ny))

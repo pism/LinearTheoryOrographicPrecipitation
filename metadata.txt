@@ -23,6 +23,8 @@ repository=https://github.com/aaschwanden/LinearTheoryOrographicPrecipitation
 # Recommended items:
 
 # Uncomment the following line and add your changelog:
+changelog=0.2
+    - fixed issue #2
 changelog=0.1
     - Initial version
 
