@@ -31,12 +31,10 @@ __copyright__ = '(C) 2018 by Andy Aschwanden and Constantine Khrulev'
 __revision__ = '$Format:%H$'
 
 import os
-import numpy as np
 from PyQt5.QtCore import QCoreApplication
 from qgis.core import (Qgis,
                        QgsProcessing,
                        QgsProcessingAlgorithm,
-                       QgsRasterBlock,
                        QgsRasterFileWriter,
                        QgsProcessingParameterNumber,
                        QgsProcessingParameterPoint,
@@ -45,6 +43,7 @@ from qgis.core import (Qgis,
                        QgsProcessingParameterDefinition,
                        QgsProcessingParameterRasterDestination)
 
+import numpy as np
 from .linear_orog_precip import gaussian_bump
 
 class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
@@ -67,14 +66,14 @@ class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
 
     def initAlgorithm(self, config):
 
-        x_min = -100e3
-        x_max = 200e3
-        y_min = -150e3
-        y_max = 150e3
-        dx = 750
-        dy = 750
-        x0 = -25e3
-        y0 = 0.0
+        x_min   = -100e3
+        x_max   = 200e3
+        y_min   = -150e3
+        y_max   = 150e3
+        dx      = 750
+        dy      = 750
+        x0      = -25e3
+        y0      = 0.0
         sigma_x = 15e3
         sigma_y = 15e3
 
@@ -121,35 +120,53 @@ class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
         self.addParameter(QgsProcessingParameterRasterDestination(self.OUTPUT,
                                                                   self.tr('Output')))
 
+    def prepareAlgorithm(self, parameters, context, feedback):
+        self.crs    = self.parameterAsCrs(parameters, self.TARGET_CRS, context)
+        self.extent = self.parameterAsExtent(parameters, self.EXTENT, context, self.crs)
+        self.center = self.parameterAsPoint(parameters, self.CENTER, context, self.crs)
+
+        self.dx = self.parameterAsDouble(parameters, self.DX, context)
+        self.dy = self.parameterAsDouble(parameters, self.DY, context)
+
+        self.sigma_x = self.parameterAsDouble(parameters, self.SIGMA_X, context)
+        self.sigma_y = self.parameterAsDouble(parameters, self.SIGMA_Y, context)
+
+        if self.dx > self.extent.width():
+            feedback.reportError(self.tr("Grid spacing cannot exceed grid extent (x direction)."))
+            return False
+        if self.dy > self.extent.height():
+            feedback.reportError(self.tr("Grid spacing cannot exceed grid extent (y direction)."))
+            return False
+
+        self.outputFile = self.parameterAsOutputLayer(parameters, self.OUTPUT, context)
+
+        return True
+
     def processAlgorithm(self, parameters, context, feedback):
-        crs = self.parameterAsCrs(parameters, self.TARGET_CRS, context)
-        extent = self.parameterAsExtent(parameters, self.EXTENT, context, crs)
-        center = self.parameterAsPoint(parameters, self.CENTER, context, crs)
+
+        extent = self.extent
 
         x_min = extent.xMinimum()
         x_max = extent.xMaximum()
         y_min = extent.yMinimum()
         y_max = extent.yMaximum()
 
-        x0 = center.x()
-        y0 = center.y()
+        x0 = self.center.x()
+        y0 = self.center.y()
 
-        dx = self.parameterAsDouble(parameters, self.DX, context)
-        dy = self.parameterAsDouble(parameters, self.DY, context)
+        outputFormat = QgsRasterFileWriter.driverForExtension(os.path.splitext(self.outputFile)[1])
 
-        outputFile = self.parameterAsOutputLayer(parameters, self.OUTPUT, context)
-        outputFormat = QgsRasterFileWriter.driverForExtension(os.path.splitext(outputFile)[1])
+        rows = max([np.ceil(extent.height() / self.dy), 1.0])
+        cols = max([np.ceil(extent.width() / self.dx), 1.0])
 
-        rows = max([np.ceil(extent.height() / dy), 1.0])
-        cols = max([np.ceil(extent.width() / dx), 1.0])
-
-        writer = QgsRasterFileWriter(outputFile)
+        writer = QgsRasterFileWriter(self.outputFile)
         writer.setOutputProviderKey('gdal')
         writer.setOutputFormat(outputFormat)
-        provider = writer.createOneBandRaster(Qgis.Float64, cols, rows, extent, crs)
+        provider = writer.createOneBandRaster(Qgis.Float64, cols, rows, extent, self.crs)
         provider.setNoDataValue(1, -9999)
 
-        _, _, data = gaussian_bump(x_min, x_max, y_min, y_max, dx, dy, x0=x0, y0=y0)
+        _, _, data = gaussian_bump(x_min, x_max, y_min, y_max, self.dx, self.dy,
+                                   x0=x0, y0=y0, sigma_x=self.sigma_x, sigma_y=self.sigma_y)
 
         provider.write(data.data,
                        1,       # band
@@ -159,7 +176,7 @@ class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
 
         provider.setEditable(False)
 
-        return {self.OUTPUT: outputFile}
+        return {self.OUTPUT: self.outputFile}
 
     def name(self):
         """
@@ -169,21 +186,21 @@ class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
         lowercase alphanumeric characters only and no spaces or other
         formatting characters.
         """
-        return 'Gaussian bump (test input)'
+        return 'bump'
 
     def displayName(self):
         """
         Returns the translated algorithm name, which should be used for any
         user-visible display of the algorithm name.
         """
-        return self.tr(self.name())
+        return self.tr("Gaussian bump")
 
     def group(self):
         """
         Returns the name of the group this algorithm belongs to. This string
         should be localised.
         """
-        return self.tr(self.groupId())
+        return self.tr("Testing")
 
     def groupId(self):
         """
@@ -193,10 +210,16 @@ class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
         contain lowercase alphanumeric characters only and no spaces or other
         formatting characters.
         """
-        return ''
+        return 'testing'
 
     def tr(self, string):
         return QCoreApplication.translate('Processing', string)
 
     def createInstance(self):
         return LTOrographicPrecipitationTestInput()
+
+    def shortHelpString(self):
+        return """
+Create a raster layer containing a Gaussian "bump" orography that can be used to test the model.
+
+Default parameter values produce the field needed to reproduce Figure 4c in Smith and Barstad (2004)."""
