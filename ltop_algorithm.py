@@ -31,12 +31,67 @@ __copyright__ = '(C) 2018 by Andy Aschwanden and Constantine Khrulev'
 __revision__ = '$Format:%H$'
 
 from PyQt5.QtCore import QCoreApplication
-from qgis.core import (QgsProcessing,
-                       QgsFeatureSink,
+from qgis.core import (Qgis,
+                       QgsProcessing,
                        QgsProcessingAlgorithm,
+                       QgsRasterFileWriter,
+                       QgsProcessingParameterRasterLayer,
+                       QgsProcessingParameterRasterDestination,
+                       QgsProcessingParameterBand,
+                       QgsProcessingParameterNumber,
+                       QgsProcessingParameterBoolean,
                        QgsProcessingParameterFeatureSource,
                        QgsProcessingParameterFeatureSink)
 
+from .linear_orog_precip import Constants, orographic_precipitation
+
+import os
+import numpy
+
+def raster_to_array(layer, band=1):
+    "Convert a raster layer to a NumPy array."
+    provider = layer.dataProvider()
+    width, height = layer.width(), layer.height()
+    block = provider.block(band, provider.extent(), width, height)
+
+    # supported types
+    types = {Qgis.Byte    : numpy.byte,
+             Qgis.UInt16  : numpy.uint16,
+             Qgis.Int16   : numpy.int16,
+             Qgis.UInt32  : numpy.uint32,
+             Qgis.Int32   : numpy.int32,
+             Qgis.Float32 : numpy.float32,
+             Qgis.Float64 : numpy.float64}
+
+    try:
+        T = types[block.dataType()]
+    except KeyError:
+        raise NotImplementedError("raster type {} is not supported".format(block.dataType()))
+
+    return numpy.ndarray((height, width), dtype=T, buffer=block.data().data())
+
+def grid(layer):
+    "Build x and y coordinates of a raster layer."
+
+    # physical extent of the layer
+    extent = layer.extent()
+
+    # size of the raster
+    Mx = layer.width()
+    My = layer.height()
+
+    # grid spacing
+    dx = extent.width() / float(Mx)
+    dy = extent.height() / float(My)
+
+    x_min, x_max = extent.xMinimum(), extent.xMaximum()
+    y_min, y_max = extent.yMinimum(), extent.yMaximum()
+
+    # assume that raster cells are centered at corresponding x and y
+    x = numpy.linspace(x_min + 0.5 * dx, x_max - 0.5 * dy, Mx)
+    y = numpy.linspace(y_min + 0.5 * dy, y_max - 0.5 * dy, My)[::-1]
+
+    return x, y, layer.crs().toProj4()
 
 class LTOrographicPrecipitationAlgorithm(QgsProcessingAlgorithm):
     """
@@ -56,8 +111,20 @@ class LTOrographicPrecipitationAlgorithm(QgsProcessingAlgorithm):
     # used when calling the algorithm from another algorithm, or when
     # calling from the QGIS console.
 
-    OUTPUT = 'OUTPUT'
-    INPUT = 'INPUT'
+    OUTPUT       = 'OUTPUT'
+    INPUT_RASTER = 'INPUT_RASTER'
+    RASTER_BAND  = 'RASTER_BAND'
+
+    TAU_C          = 'TAU_C'
+    TAU_F          = 'TAU_F'
+    P0             = 'P0'
+    P_SCALE        = 'P_SCALE'
+    NM             = 'NM'
+    HW             = 'HW'
+    LATITUDE       = 'LATITUDE'
+    WIND_DIRECTION = 'WIND_DIRECTION'
+    WIND_SPEED     = 'WIND_SPEED'
+    TRUNCATE       = 'TRUNCATE'
 
     def initAlgorithm(self, config):
         """
@@ -65,61 +132,127 @@ class LTOrographicPrecipitationAlgorithm(QgsProcessingAlgorithm):
         with some other properties.
         """
 
-        # We add the input vector features source. It can have any kind of
-        # geometry.
-        self.addParameter(
-            QgsProcessingParameterFeatureSource(
-                self.INPUT,
-                self.tr('Input layer'),
-                [QgsProcessing.TypeVectorAnyGeometry]
-            )
-        )
+        self.addParameter(QgsProcessingParameterRasterLayer(self.INPUT_RASTER,
+                                                            self.tr('Raster layer')))
+        self.addParameter(QgsProcessingParameterBand(self.RASTER_BAND,
+                                                     self.tr('Raster band'),
+                                                     1,
+                                                     self.INPUT_RASTER))
 
-        # We add a feature sink in which to store our processed features (this
-        # usually takes the form of a newly created vector layer when the
-        # algorithm is run in QGIS).
-        self.addParameter(
-            QgsProcessingParameterFeatureSink(
-                self.OUTPUT,
-                self.tr('Output layer')
-            )
-        )
+        c = Constants()
+
+        self.addParameter(QgsProcessingParameterNumber(self.TAU_C,
+                                                       self.tr("Conversion time (seconds)"),
+                                                       QgsProcessingParameterNumber.Double,
+                                                       defaultValue=c.tau_c,
+                                                       minValue=0.0))
+        self.addParameter(QgsProcessingParameterNumber(self.TAU_F,
+                                                       self.tr("Fallout time (seconds)"),
+                                                       QgsProcessingParameterNumber.Double,
+                                                       defaultValue=c.tau_f,
+                                                       minValue=0.0))
+        self.addParameter(QgsProcessingParameterNumber(self.P0,
+                                                       self.tr("Background precipitation rate (mm/hour)"),
+                                                       QgsProcessingParameterNumber.Double,
+                                                       defaultValue=c.P0,
+                                                       minValue=0.0))
+        self.addParameter(QgsProcessingParameterNumber(self.P_SCALE,
+                                                       self.tr("Precipitation scale factor"),
+                                                       QgsProcessingParameterNumber.Double,
+                                                       defaultValue=1.0,
+                                                       minValue=0.0))
+        self.addParameter(QgsProcessingParameterNumber(self.NM,
+                                                       self.tr("Moist stability frequency (1/second)"),
+                                                       QgsProcessingParameterNumber.Double,
+                                                       defaultValue=c.Nm,
+                                                       minValue=0.0))
+        self.addParameter(QgsProcessingParameterNumber(self.HW,
+                                                       self.tr("Water vapor scale height (meters)"),
+                                                       QgsProcessingParameterNumber.Double,
+                                                       defaultValue=c.Hw,
+                                                       minValue=0.0))
+        self.addParameter(QgsProcessingParameterNumber(self.LATITUDE,
+                                                       self.tr("Latitude used to compute the Coriolis force"),
+                                                       QgsProcessingParameterNumber.Double,
+                                                       defaultValue=c.latitude,
+                                                       minValue=-90.0,
+                                                       maxValue=90.0))
+        self.addParameter(QgsProcessingParameterNumber(self.WIND_DIRECTION,
+                                                       self.tr("The direction the wind is coming from (0 is north, 270 is west)"),
+                                                       QgsProcessingParameterNumber.Double,
+                                                       defaultValue=c.direction,
+                                                       minValue=0.0,
+                                                       maxValue=360.0))
+        self.addParameter(QgsProcessingParameterNumber(self.WIND_SPEED,
+                                                       self.tr("Wind speed (m/second)"),
+                                                       QgsProcessingParameterNumber.Double,
+                                                       defaultValue=c.speed,
+                                                       minValue=0.0))
+        self.addParameter(QgsProcessingParameterBoolean(self.TRUNCATE,
+                                                       self.tr("Truncate negative precipitation"),
+                                                       defaultValue=True))
+
+
+        self.addParameter(QgsProcessingParameterRasterDestination(self.OUTPUT,
+                                                                  self.tr('Output')))
+
+    def prepareAlgorithm(self, parameters, context, feedback):
+        self.orography = self.parameterAsRasterLayer(parameters, self.INPUT_RASTER, context)
+        self.bandNumber = self.parameterAsInt(parameters, self.RASTER_BAND, context)
+
+        self.truncate = self.parameterAsBool(parameters, self.TRUNCATE, context)
+
+        c = Constants()
+
+        c.tau_c     = self.parameterAsDouble(parameters, self.TAU_C, context)
+        c.tau_f     = self.parameterAsDouble(parameters, self.TAU_F, context)
+        c.P0        = self.parameterAsDouble(parameters, self.P0, context)
+        c.P_scale   = self.parameterAsDouble(parameters, self.P_SCALE, context)
+        c.Nm        = self.parameterAsDouble(parameters, self.NM, context)
+        c.Hw        = self.parameterAsDouble(parameters, self.HW, context)
+        c.latitude  = self.parameterAsDouble(parameters, self.LATITUDE, context)
+        c.direction = self.parameterAsDouble(parameters, self.WIND_DIRECTION, context)
+        c.speed     = self.parameterAsDouble(parameters, self.WIND_SPEED, context)
+        c.update()
+
+        self.constants = c
+
+        self.outputFile = self.parameterAsOutputLayer(parameters, self.OUTPUT, context)
+
+        return True
 
     def processAlgorithm(self, parameters, context, feedback):
-        """
-        Here is where the processing itself takes place.
-        """
 
-        # Retrieve the feature source and sink. The 'dest_id' variable is used
-        # to uniquely identify the feature sink, and must be included in the
-        # dictionary returned by the processAlgorithm function.
-        source = self.parameterAsSource(parameters, self.INPUT, context)
-        (sink, dest_id) = self.parameterAsSink(parameters, self.OUTPUT,
-                context, source.fields(), source.wkbType(), source.sourceCrs())
+        dem = raster_to_array(self.orography, self.bandNumber)
 
-        # Compute the number of steps to display within the progress bar and
-        # get features from source
-        total = 100.0 / source.featureCount() if source.featureCount() else 0
-        features = source.getFeatures()
+        x, y, _ = grid(self.orography)
 
-        for current, feature in enumerate(features):
-            # Stop the algorithm if cancel button has been clicked
-            if feedback.isCanceled():
-                break
+        dx = x[1] - x[0]
+        dy = y[1] - y[0]
 
-            # Add a feature in the sink
-            sink.addFeature(feature, QgsFeatureSink.FastInsert)
+        P = orographic_precipitation(dx, dy, dem, self.constants, self.truncate)
 
-            # Update the progress bar
-            feedback.setProgress(int(current * total))
+        outputFormat = QgsRasterFileWriter.driverForExtension(os.path.splitext(self.outputFile)[1])
 
-        # Return the results of the algorithm. In this case our only result is
-        # the feature sink which contains the processed features, but some
-        # algorithms may return multiple feature sinks, calculated numeric
-        # statistics, etc. These should all be included in the returned
-        # dictionary, with keys matching the feature corresponding parameter
-        # or output names.
-        return {self.OUTPUT: dest_id}
+        writer = QgsRasterFileWriter(self.outputFile)
+        writer.setOutputProviderKey('gdal')
+        writer.setOutputFormat(outputFormat)
+        provider = writer.createOneBandRaster(Qgis.Float64,
+                                              x.size,
+                                              y.size,
+                                              self.orography.extent(),
+                                              self.orography.crs())
+        provider.setNoDataValue(1, -9999)
+
+        provider.write(bytes(P.data),
+                       1,       # band
+                       x.size,  # width
+                       y.size,  # height
+                       0, 0)    # offset
+
+        provider.setEditable(False)
+
+        return {self.OUTPUT: self.outputFile}
 
     def name(self):
         """
@@ -129,21 +262,21 @@ class LTOrographicPrecipitationAlgorithm(QgsProcessingAlgorithm):
         lowercase alphanumeric characters only and no spaces or other
         formatting characters.
         """
-        return 'Orographic Precipitation'
+        return 'precipitation'
 
     def displayName(self):
         """
         Returns the translated algorithm name, which should be used for any
         user-visible display of the algorithm name.
         """
-        return self.tr(self.name())
+        return self.tr("Compute orographic precipitation")
 
     def group(self):
         """
         Returns the name of the group this algorithm belongs to. This string
         should be localised.
         """
-        return self.tr(self.groupId())
+        return self.tr("Model")
 
     def groupId(self):
         """
@@ -153,10 +286,25 @@ class LTOrographicPrecipitationAlgorithm(QgsProcessingAlgorithm):
         contain lowercase alphanumeric characters only and no spaces or other
         formatting characters.
         """
-        return ''
+        return 'model'
 
     def tr(self, string):
         return QCoreApplication.translate('Processing', string)
 
     def createInstance(self):
         return LTOrographicPrecipitationAlgorithm()
+
+    def shortHelpString(self):
+        return """
+This plugin implements the Linear Theory of Orographic Precipitation model by Smith and Barstad (2004).
+
+The model includes airflow dynamics, condensed water advection, and downslope evaporation. Vertically integrated steady-state governing equations for condensed water are solved using Fourier transform techniques. The precipitation field is computed quickly by multiplying the terrain transform by a wavenumber-dependent transfer function.
+
+If no input raster is given (check gaussian bump box), the default parameters will reproduce Figure 4c in the Smith and Barstad paper.
+
+This method is fast even for larger rasters if sufficient RAM is available. However, processing large rasters with insuffiecient RAM is very slow.
+
+Before using this plugin, please read the original manuscript of Smith and Barstad (2004) to understand the model physics and its limitations."""
+
+    def outputName(self):
+        return "Precipitation"
