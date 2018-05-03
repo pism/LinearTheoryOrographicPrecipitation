@@ -168,7 +168,7 @@ class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
         _, _, data = gaussian_bump(x_min, x_max, y_min, y_max, self.dx, self.dy,
                                    x0=x0, y0=y0, sigma_x=self.sigma_x, sigma_y=self.sigma_y)
 
-        provider.write(data.data,
+        provider.write(bytes(data.data),
                        1,       # band
                        cols,    # width
                        rows,    # height
