@@ -39,11 +39,13 @@ from qgis.core import (Qgis,
                        QgsRasterBlock,
                        QgsRasterFileWriter,
                        QgsProcessingParameterNumber,
+                       QgsProcessingParameterPoint,
                        QgsProcessingParameterCrs,
                        QgsProcessingParameterExtent,
                        QgsProcessingParameterDefinition,
                        QgsProcessingParameterRasterDestination)
 
+from .linear_orog_precip import gaussian_bump
 
 class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
     """
@@ -59,24 +61,11 @@ class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
     EXTENT = 'EXTENT'
     DX = 'DX'
     DY = 'DY'
-    X_MIN = 'X_MIN'
-    X_MAX = 'X_MAX'
-    Y_MIN = 'Y_MIN'
-    Y_MAX = 'Y_MAX'
-    X0 = 'X0'
-    Y0 = 'Y0'
     SIGMA_X = 'SIGMA_X'
     SIGMA_Y = 'SIGMA_Y'
+    CENTER = 'CENTER'
 
     def initAlgorithm(self, config):
-        """
-        Here we define the inputs and output of the algorithm, along
-        with some other properties.
-        """
-
-        self.addParameter(QgsProcessingParameterCrs(self.TARGET_CRS,
-                                                    self.tr('Target CRS'),
-                                                    'ProjectCrs'))
 
         x_min = -100e3
         x_max = 200e3
@@ -89,9 +78,14 @@ class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
         sigma_x = 15e3
         sigma_y = 15e3
 
+        self.addParameter(QgsProcessingParameterCrs(self.TARGET_CRS,
+                                                    self.tr('Target CRS'),
+                                                    'ProjectCrs'))
+
         self.addParameter(QgsProcessingParameterExtent(self.EXTENT,
                                                        self.tr('Extent'),
-                                                       "{}, {}, {}, {}".format(x_min, x_max, y_min, y_max)))
+                                                       "{}, {}, {}, {}".format(x_min, x_max,
+                                                                               y_min, y_max)))
 
         self.addParameter(QgsProcessingParameterNumber(self.DX,
                                                        self.tr("Grid spacing (dx)"),
@@ -104,15 +98,9 @@ class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
                                                        defaultValue=dy,
                                                        minValue=0.0))
 
-        self.addParameter(QgsProcessingParameterNumber(self.X0,
-                                                       self.tr("Center coordinate (x)"),
-                                                       QgsProcessingParameterNumber.Double,
-                                                       defaultValue=x0))
-
-        self.addParameter(QgsProcessingParameterNumber(self.Y0,
-                                                       self.tr("Center coordinate (y)"),
-                                                       QgsProcessingParameterNumber.Double,
-                                                       defaultValue=y0))
+        self.addParameter(QgsProcessingParameterPoint(self.CENTER,
+                                                      self.tr("Center"),
+                                                      "{}, {}".format(x0, y0)))
 
         s_x = QgsProcessingParameterNumber(self.SIGMA_X,
                                            self.tr("Spread in the X direction (sigma_x)"),
@@ -130,21 +118,21 @@ class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
         s_y.setFlags(s_y.flags() | QgsProcessingParameterDefinition.FlagAdvanced)
         self.addParameter(s_y)
 
-
         self.addParameter(QgsProcessingParameterRasterDestination(self.OUTPUT,
                                                                   self.tr('Output')))
 
     def processAlgorithm(self, parameters, context, feedback):
-        """
-        Here is where the processing itself takes place.
-        """
         crs = self.parameterAsCrs(parameters, self.TARGET_CRS, context)
         extent = self.parameterAsExtent(parameters, self.EXTENT, context, crs)
+        center = self.parameterAsPoint(parameters, self.CENTER, context, crs)
 
         x_min = extent.xMinimum()
         x_max = extent.xMaximum()
         y_min = extent.yMinimum()
         y_max = extent.yMaximum()
+
+        x0 = center.x()
+        y0 = center.y()
 
         dx = self.parameterAsDouble(parameters, self.DX, context)
         dy = self.parameterAsDouble(parameters, self.DY, context)
@@ -152,8 +140,8 @@ class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
         outputFile = self.parameterAsOutputLayer(parameters, self.OUTPUT, context)
         outputFormat = QgsRasterFileWriter.driverForExtension(os.path.splitext(outputFile)[1])
 
-        rows = max([np.ceil(extent.height() / dy) + 1, 1.0])
-        cols = max([np.ceil(extent.width() / dx) + 1, 1.0])
+        rows = max([np.ceil(extent.height() / dy), 1.0])
+        cols = max([np.ceil(extent.width() / dx), 1.0])
 
         writer = QgsRasterFileWriter(outputFile)
         writer.setOutputProviderKey('gdal')
@@ -161,21 +149,17 @@ class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
         provider = writer.createOneBandRaster(Qgis.Float64, cols, rows, extent, crs)
         provider.setNoDataValue(1, -9999)
 
-        data = np.zeros((1, cols)) + dx
-        block = QgsRasterBlock(Qgis.Float32, cols, 1)
-        block.setData(data.data())
+        _, _, data = gaussian_bump(x_min, x_max, y_min, y_max, dx, dy, x0=x0, y0=y0)
 
-        total = 100.0 / rows if rows else 0
-        for i in range(rows):
-            if feedback.isCanceled():
-                break
-
-            provider.writeBlock(block, 1, 0, i)
-            feedback.setProgress(int(i * rows))
+        provider.write(data.data,
+                       1,       # band
+                       cols,    # width
+                       rows,    # height
+                       0, 0)    # offset
 
         provider.setEditable(False)
 
-        return {self.OUTPUT: dest_id}
+        return {self.OUTPUT: outputFile}
 
     def name(self):
         """
@@ -185,7 +169,7 @@ class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
         lowercase alphanumeric characters only and no spaces or other
         formatting characters.
         """
-        return 'Test input (gaussian bump)'
+        return 'Gaussian bump (test input)'
 
     def displayName(self):
         """
