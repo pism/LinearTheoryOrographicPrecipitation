@@ -65,7 +65,6 @@ class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
     CENTER = 'CENTER'
 
     def initAlgorithm(self, config):
-
         x_min   = -100e3
         x_max   = 200e3
         y_min   = -150e3
@@ -118,7 +117,7 @@ class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
         self.addParameter(s_y)
 
         self.addParameter(QgsProcessingParameterRasterDestination(self.OUTPUT,
-                                                                  self.tr('Output')))
+                                                                  self.tr('Testing DEM')))
 
     def prepareAlgorithm(self, parameters, context, feedback):
         self.crs    = self.parameterAsCrs(parameters, self.TARGET_CRS, context)
