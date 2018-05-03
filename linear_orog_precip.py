@@ -78,7 +78,7 @@ def orographic_precipitation(dx, dy, orography, constants, truncate):
     logger.debug('Raster shape before padding ({},{})'.format(nx, ny))
 
     padded_orography = np.pad(orography, pad, 'constant')
-    ny, nx = padded_orography.shape
+    nx, ny = padded_orography.shape
     logger.debug('Raster shape after padding ({},{})'.format(ny, nx))
 
     logger.info('Fourier transform orography')
