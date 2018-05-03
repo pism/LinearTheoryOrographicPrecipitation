@@ -32,7 +32,7 @@ __revision__ = '$Format:%H$'
 
 from qgis.core import QgsProcessingProvider
 from .ltop_algorithm import LTOrographicPrecipitationAlgorithm
-
+from .ltop_bump import LTOrographicPrecipitationTestInput
 
 class LTOrographicPrecipitationProvider(QgsProcessingProvider):
 
@@ -40,7 +40,7 @@ class LTOrographicPrecipitationProvider(QgsProcessingProvider):
         QgsProcessingProvider.__init__(self)
 
         # Load algorithms
-        self.alglist = [LTOrographicPrecipitationAlgorithm()]
+        self.alglist = [LTOrographicPrecipitationAlgorithm(), LTOrographicPrecipitationTestInput()]
 
     def unload(self):
         """

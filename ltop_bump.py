@@ -30,26 +30,24 @@ __copyright__ = '(C) 2018 by Andy Aschwanden and Constantine Khrulev'
 
 __revision__ = '$Format:%H$'
 
+import os
+import numpy as np
 from PyQt5.QtCore import QCoreApplication
-from qgis.core import (QgsProcessing,
-                       QgsFeatureSink,
+from qgis.core import (Qgis,
+                       QgsProcessing,
                        QgsProcessingAlgorithm,
-                       QgsProcessingParameterFeatureSource,
-                       QgsProcessingParameterFeatureSink)
+                       QgsRasterBlock,
+                       QgsRasterFileWriter,
+                       QgsProcessingParameterNumber,
+                       QgsProcessingParameterCrs,
+                       QgsProcessingParameterExtent,
+                       QgsProcessingParameterDefinition,
+                       QgsProcessingParameterRasterDestination)
 
 
-class LTOrographicPrecipitationAlgorithm(QgsProcessingAlgorithm):
+class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
     """
-    This is an example algorithm that takes a vector layer and
-    creates a new identical one.
-
-    It is meant to be used as an example of how to create your own
-    algorithms and explain methods and variables used to do it. An
-    algorithm like this will be available in all elements, and there
-    is not need for additional work.
-
-    All Processing algorithms should extend the QgsProcessingAlgorithm
-    class.
+    Creates the gaussian bump field for testing.
     """
 
     # Constants used to refer to parameters and outputs. They will be
@@ -57,7 +55,18 @@ class LTOrographicPrecipitationAlgorithm(QgsProcessingAlgorithm):
     # calling from the QGIS console.
 
     OUTPUT = 'OUTPUT'
-    INPUT = 'INPUT'
+    TARGET_CRS = 'TARGET_CRS'
+    EXTENT = 'EXTENT'
+    DX = 'DX'
+    DY = 'DY'
+    X_MIN = 'X_MIN'
+    X_MAX = 'X_MAX'
+    Y_MIN = 'Y_MIN'
+    Y_MAX = 'Y_MAX'
+    X0 = 'X0'
+    Y0 = 'Y0'
+    SIGMA_X = 'SIGMA_X'
+    SIGMA_Y = 'SIGMA_Y'
 
     def initAlgorithm(self, config):
         """
@@ -65,60 +74,107 @@ class LTOrographicPrecipitationAlgorithm(QgsProcessingAlgorithm):
         with some other properties.
         """
 
-        # We add the input vector features source. It can have any kind of
-        # geometry.
-        self.addParameter(
-            QgsProcessingParameterFeatureSource(
-                self.INPUT,
-                self.tr('Input layer'),
-                [QgsProcessing.TypeVectorAnyGeometry]
-            )
-        )
+        self.addParameter(QgsProcessingParameterCrs(self.TARGET_CRS,
+                                                    self.tr('Target CRS'),
+                                                    'ProjectCrs'))
 
-        # We add a feature sink in which to store our processed features (this
-        # usually takes the form of a newly created vector layer when the
-        # algorithm is run in QGIS).
-        self.addParameter(
-            QgsProcessingParameterFeatureSink(
-                self.OUTPUT,
-                self.tr('Output layer')
-            )
-        )
+        x_min = -100e3
+        x_max = 200e3
+        y_min = -150e3
+        y_max = 150e3
+        dx = 750
+        dy = 750
+        x0 = -25e3
+        y0 = 0.0
+        sigma_x = 15e3
+        sigma_y = 15e3
+
+        self.addParameter(QgsProcessingParameterExtent(self.EXTENT,
+                                                       self.tr('Extent'),
+                                                       "{}, {}, {}, {}".format(x_min, x_max, y_min, y_max)))
+
+        self.addParameter(QgsProcessingParameterNumber(self.DX,
+                                                       self.tr("Grid spacing (dx)"),
+                                                       QgsProcessingParameterNumber.Double,
+                                                       defaultValue=dx,
+                                                       minValue=0.0))
+        self.addParameter(QgsProcessingParameterNumber(self.DY,
+                                                       self.tr("Grid spacing (dy)"),
+                                                       QgsProcessingParameterNumber.Double,
+                                                       defaultValue=dy,
+                                                       minValue=0.0))
+
+        self.addParameter(QgsProcessingParameterNumber(self.X0,
+                                                       self.tr("Center coordinate (x)"),
+                                                       QgsProcessingParameterNumber.Double,
+                                                       defaultValue=x0))
+
+        self.addParameter(QgsProcessingParameterNumber(self.Y0,
+                                                       self.tr("Center coordinate (y)"),
+                                                       QgsProcessingParameterNumber.Double,
+                                                       defaultValue=y0))
+
+        s_x = QgsProcessingParameterNumber(self.SIGMA_X,
+                                           self.tr("Spread in the X direction (sigma_x)"),
+                                           QgsProcessingParameterNumber.Double,
+                                           defaultValue=sigma_x,
+                                           minValue=0.0)
+        s_x.setFlags(s_x.flags() | QgsProcessingParameterDefinition.FlagAdvanced)
+        self.addParameter(s_x)
+
+        s_y = QgsProcessingParameterNumber(self.SIGMA_Y,
+                                           self.tr("Spread in the Y direction (sigma_y)"),
+                                           QgsProcessingParameterNumber.Double,
+                                           defaultValue=sigma_y,
+                                           minValue=0.0)
+        s_y.setFlags(s_y.flags() | QgsProcessingParameterDefinition.FlagAdvanced)
+        self.addParameter(s_y)
+
+
+        self.addParameter(QgsProcessingParameterRasterDestination(self.OUTPUT,
+                                                                  self.tr('Output')))
 
     def processAlgorithm(self, parameters, context, feedback):
         """
         Here is where the processing itself takes place.
         """
+        crs = self.parameterAsCrs(parameters, self.TARGET_CRS, context)
+        extent = self.parameterAsExtent(parameters, self.EXTENT, context, crs)
 
-        # Retrieve the feature source and sink. The 'dest_id' variable is used
-        # to uniquely identify the feature sink, and must be included in the
-        # dictionary returned by the processAlgorithm function.
-        source = self.parameterAsSource(parameters, self.INPUT, context)
-        (sink, dest_id) = self.parameterAsSink(parameters, self.OUTPUT,
-                context, source.fields(), source.wkbType(), source.sourceCrs())
+        x_min = extent.xMinimum()
+        x_max = extent.xMaximum()
+        y_min = extent.yMinimum()
+        y_max = extent.yMaximum()
 
-        # Compute the number of steps to display within the progress bar and
-        # get features from source
-        total = 100.0 / source.featureCount() if source.featureCount() else 0
-        features = source.getFeatures()
+        dx = self.parameterAsDouble(parameters, self.DX, context)
+        dy = self.parameterAsDouble(parameters, self.DY, context)
 
-        for current, feature in enumerate(features):
-            # Stop the algorithm if cancel button has been clicked
+        outputFile = self.parameterAsOutputLayer(parameters, self.OUTPUT, context)
+        outputFormat = QgsRasterFileWriter.driverForExtension(os.path.splitext(outputFile)[1])
+
+        rows = max([np.ceil(extent.height() / dy) + 1, 1.0])
+        cols = max([np.ceil(extent.width() / dx) + 1, 1.0])
+
+        writer = QgsRasterFileWriter(outputFile)
+        writer.setOutputProviderKey('gdal')
+        writer.setOutputFormat(outputFormat)
+        provider = writer.createOneBandRaster(Qgis.Float64, cols, rows, extent, crs)
+        provider.setNoDataValue(1, -9999)
+
+        data = np.zeros((1, cols)) + dx
+        block = QgsRasterBlock(Qgis.Float32, cols, 1)
+        block.setData(data.data())
+
+        total = 100.0 / rows if rows else 0
+        for i in range(rows):
             if feedback.isCanceled():
                 break
 
-            # Add a feature in the sink
-            sink.addFeature(feature, QgsFeatureSink.FastInsert)
+            provider.writeBlock(block, 1, 0, i)
+            feedback.setProgress(int(i * rows))
 
-            # Update the progress bar
-            feedback.setProgress(int(current * total))
+        provider.setEditable(False)
 
-        # Return the results of the algorithm. In this case our only result is
-        # the feature sink which contains the processed features, but some
-        # algorithms may return multiple feature sinks, calculated numeric
-        # statistics, etc. These should all be included in the returned
-        # dictionary, with keys matching the feature corresponding parameter
-        # or output names.
         return {self.OUTPUT: dest_id}
 
     def name(self):
@@ -129,7 +185,7 @@ class LTOrographicPrecipitationAlgorithm(QgsProcessingAlgorithm):
         lowercase alphanumeric characters only and no spaces or other
         formatting characters.
         """
-        return 'Orographic Precipitation'
+        return 'Test input (gaussian bump)'
 
     def displayName(self):
         """
@@ -159,4 +215,4 @@ class LTOrographicPrecipitationAlgorithm(QgsProcessingAlgorithm):
         return QCoreApplication.translate('Processing', string)
 
     def createInstance(self):
-        return LTOrographicPrecipitationAlgorithm()
+        return LTOrographicPrecipitationTestInput()
