@@ -55,14 +55,14 @@ class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
     # used when calling the algorithm from another algorithm, or when
     # calling from the QGIS console.
 
-    OUTPUT = 'OUTPUT'
+    OUTPUT     = 'OUTPUT'
     TARGET_CRS = 'TARGET_CRS'
-    EXTENT = 'EXTENT'
-    DX = 'DX'
-    DY = 'DY'
-    SIGMA_X = 'SIGMA_X'
-    SIGMA_Y = 'SIGMA_Y'
-    CENTER = 'CENTER'
+    EXTENT     = 'EXTENT'
+    DX         = 'DX'
+    DY         = 'DY'
+    SIGMA_X    = 'SIGMA_X'
+    SIGMA_Y    = 'SIGMA_Y'
+    CENTER     = 'CENTER'
 
     def initAlgorithm(self, config):
         x_min   = -100e3
@@ -120,6 +120,7 @@ class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
                                                                   self.tr('Testing DEM')))
 
     def prepareAlgorithm(self, parameters, context, feedback):
+        "Prepare and validate parameter values."
         self.crs    = self.parameterAsCrs(parameters, self.TARGET_CRS, context)
         self.extent = self.parameterAsExtent(parameters, self.EXTENT, context, self.crs)
         self.center = self.parameterAsPoint(parameters, self.CENTER, context, self.crs)
@@ -142,6 +143,7 @@ class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
         return True
 
     def processAlgorithm(self, parameters, context, feedback):
+        "Create the test DEM."
 
         extent = self.extent
 
@@ -219,6 +221,6 @@ class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
 
     def shortHelpString(self):
         return """
-Create a raster layer containing a Gaussian "bump" orography that can be used to test the model.
+Create a raster layer containing a Gaussian "bump" orography that can be used to test the LT model.
 
-Default parameter values produce the field needed to reproduce Figure 4c in Smith and Barstad (2004)."""
+Default parameter values create the field needed to reproduce Figure 4c in Smith and Barstad (2004)."""

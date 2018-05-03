@@ -91,22 +91,9 @@ def grid(layer):
     x = numpy.linspace(x_min + 0.5 * dx, x_max - 0.5 * dy, Mx)
     y = numpy.linspace(y_min + 0.5 * dy, y_max - 0.5 * dy, My)[::-1]
 
-    return x, y, layer.crs().toProj4()
+    return x, y
 
 class LTOrographicPrecipitationAlgorithm(QgsProcessingAlgorithm):
-    """
-    This is an example algorithm that takes a vector layer and
-    creates a new identical one.
-
-    It is meant to be used as an example of how to create your own
-    algorithms and explain methods and variables used to do it. An
-    algorithm like this will be available in all elements, and there
-    is not need for additional work.
-
-    All Processing algorithms should extend the QgsProcessingAlgorithm
-    class.
-    """
-
     # Constants used to refer to parameters and outputs. They will be
     # used when calling the algorithm from another algorithm, or when
     # calling from the QGIS console.
@@ -128,17 +115,15 @@ class LTOrographicPrecipitationAlgorithm(QgsProcessingAlgorithm):
 
     def initAlgorithm(self, config):
         """
-        Here we define the inputs and output of the algorithm, along
-        with some other properties.
+        Define inputs and output of the algorithm.
         """
 
         self.addParameter(QgsProcessingParameterRasterLayer(self.INPUT_RASTER,
-                                                            self.tr('Input DEM (layer)')))
+                                                            self.tr('Input DEM (meters above sea level)')))
         self.addParameter(QgsProcessingParameterBand(self.RASTER_BAND,
                                                      self.tr('Band number'),
                                                      1,
                                                      self.INPUT_RASTER))
-
         c = Constants()
 
         self.addParameter(QgsProcessingParameterNumber(self.TAU_C,
@@ -196,6 +181,7 @@ class LTOrographicPrecipitationAlgorithm(QgsProcessingAlgorithm):
                                                                   self.tr('Precipitation')))
 
     def prepareAlgorithm(self, parameters, context, feedback):
+        "Process inputs and update derived contants."
         self.orography = self.parameterAsRasterLayer(parameters, self.INPUT_RASTER, context)
         self.bandNumber = self.parameterAsInt(parameters, self.RASTER_BAND, context)
 
@@ -221,10 +207,11 @@ class LTOrographicPrecipitationAlgorithm(QgsProcessingAlgorithm):
         return True
 
     def processAlgorithm(self, parameters, context, feedback):
+        "Compute orographic precipitation."
 
         dem = raster_to_array(self.orography, self.bandNumber)
 
-        x, y, _ = grid(self.orography)
+        x, y = grid(self.orography)
 
         dx = x[1] - x[0]
         dy = y[0] - y[1]        # note: y is decreasing
@@ -302,8 +289,16 @@ This plugin implements the Linear Theory of Orographic Precipitation model by Sm
 
 The model includes airflow dynamics, condensed water advection, and downslope evaporation. Vertically integrated steady-state governing equations for condensed water are solved using Fourier transform techniques. The precipitation field is computed quickly by multiplying the terrain transform by a wavenumber-dependent transfer function.
 
-To reproduce the figure 4c from Smith and Barstad, generate a DEM the "Gaussian bump" tool with default parameter values.
-
 This method is fast even for larger rasters if sufficient RAM is available. However, processing large rasters with insuffiecient RAM is very slow.
 
-Before using this plugin, please read the original manuscript of Smith and Barstad (2004) to understand the model physics and its limitations."""
+Before using this plugin, please read the original manuscript of Smith and Barstad (2004) to understand the model physics and its limitations.
+
+To reproduce the figure 4c from Smith and Barstad, generate a DEM using the "Gaussian bump" tool with default parameter values.
+
+Click on the "Help" button below for more information.
+"""
+
+    def helpUrl(self):
+        path = os.path.dirname(__file__)
+
+        return "file://" + os.path.join(path, "help", "help.html")

@@ -31,8 +31,8 @@ __copyright__ = '(C) 2018 by Andy Aschwanden and Constantine Khrulev'
 __revision__ = '$Format:%H$'
 
 from qgis.core import QgsProcessingProvider
-from .ltop_algorithm import LTOrographicPrecipitationAlgorithm
-from .ltop_bump import LTOrographicPrecipitationTestInput
+from .ltop_precipitation import LTOrographicPrecipitationAlgorithm
+from .ltop_test_dem import LTOrographicPrecipitationTestInput
 
 class LTOrographicPrecipitationProvider(QgsProcessingProvider):
 
