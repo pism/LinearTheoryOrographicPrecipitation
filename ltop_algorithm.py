@@ -133,9 +133,9 @@ class LTOrographicPrecipitationAlgorithm(QgsProcessingAlgorithm):
         """
 
         self.addParameter(QgsProcessingParameterRasterLayer(self.INPUT_RASTER,
-                                                            self.tr('Raster layer')))
+                                                            self.tr('Input DEM (layer)')))
         self.addParameter(QgsProcessingParameterBand(self.RASTER_BAND,
-                                                     self.tr('Raster band'),
+                                                     self.tr('Band number'),
                                                      1,
                                                      self.INPUT_RASTER))
 
@@ -192,9 +192,8 @@ class LTOrographicPrecipitationAlgorithm(QgsProcessingAlgorithm):
                                                        self.tr("Truncate negative precipitation"),
                                                        defaultValue=True))
 
-
         self.addParameter(QgsProcessingParameterRasterDestination(self.OUTPUT,
-                                                                  self.tr('Output')))
+                                                                  self.tr('Precipitation')))
 
     def prepareAlgorithm(self, parameters, context, feedback):
         self.orography = self.parameterAsRasterLayer(parameters, self.INPUT_RASTER, context)
@@ -228,7 +227,10 @@ class LTOrographicPrecipitationAlgorithm(QgsProcessingAlgorithm):
         x, y, _ = grid(self.orography)
 
         dx = x[1] - x[0]
-        dy = y[1] - y[0]
+        dy = y[0] - y[1]        # note: y is decreasing
+
+        assert dx > 0
+        assert dy > 0
 
         P = orographic_precipitation(dx, dy, dem, self.constants, self.truncate)
 
@@ -300,11 +302,8 @@ This plugin implements the Linear Theory of Orographic Precipitation model by Sm
 
 The model includes airflow dynamics, condensed water advection, and downslope evaporation. Vertically integrated steady-state governing equations for condensed water are solved using Fourier transform techniques. The precipitation field is computed quickly by multiplying the terrain transform by a wavenumber-dependent transfer function.
 
-If no input raster is given (check gaussian bump box), the default parameters will reproduce Figure 4c in the Smith and Barstad paper.
+To reproduce the figure 4c from Smith and Barstad, generate a DEM the "Gaussian bump" tool with default parameter values.
 
 This method is fast even for larger rasters if sufficient RAM is available. However, processing large rasters with insuffiecient RAM is very slow.
 
 Before using this plugin, please read the original manuscript of Smith and Barstad (2004) to understand the model physics and its limitations."""
-
-    def outputName(self):
-        return "Precipitation"
