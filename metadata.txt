@@ -8,15 +8,15 @@ email=ckhroulev@alaska.edu
 
 about=This plugin implements the Linear Theory of Orographic Precipitation model by Smith and Barstad (2004). The model includes airflow dynamics, condensed water advection, and downslope evaporation. Vertically integrated steady-state governing equations for condensed water are solved using Fourier transform techniques. The precipitation field is computed quickly by multiplying the terrain transform by a wavenumber-dependent transfer function. The code is fast even for larger rasters if sufficient RAM is available. However, processing large rasters with insuffiecient RAM is very slow. Before using this plugin, please read the original manuscript of Smith and Barstad (2004) to understand the model physics and its limitations.
 
-tracker=https://github.com/ckhroulev/LinearTheoryOrographicPrecipitation/issues
-repository=https://github.com/ckhroulev/LinearTheoryOrographicPrecipitation
+tracker=https://github.com/pism/LinearTheoryOrographicPrecipitation/issues
+repository=https://github.com/pism/LinearTheoryOrographicPrecipitation
 # End of mandatory metadata
 
 # Recommended items:
 
 # Uncomment the following line and add your changelog:
 changelog=3.0
-        - Port to QGIS3
+        - Port to QGIS3 and moved to the PISM organization
 
 # Tags are comma separated with spaces allowed
 tags=python,numpy
