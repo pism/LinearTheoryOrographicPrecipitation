@@ -90,12 +90,12 @@ class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
                                                                                y_min, y_max)))
 
         self.addParameter(QgsProcessingParameterNumber(self.DX,
-                                                       self.tr("Grid spacing (dx)"),
+                                                       self.tr("Grid spacing (dx, meters)"),
                                                        QgsProcessingParameterNumber.Double,
                                                        defaultValue=dx,
                                                        minValue=0.0))
         self.addParameter(QgsProcessingParameterNumber(self.DY,
-                                                       self.tr("Grid spacing (dy)"),
+                                                       self.tr("Grid spacing (dy, meters)"),
                                                        QgsProcessingParameterNumber.Double,
                                                        defaultValue=dy,
                                                        minValue=0.0))
@@ -198,7 +198,7 @@ class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
         Returns the translated algorithm name, which should be used for any
         user-visible display of the algorithm name.
         """
-        return self.tr("Gaussian bump")
+        return self.tr("Isolated Gaussian hill")
 
     def group(self):
         """
@@ -227,7 +227,7 @@ class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
         return """
 Create a raster layer containing a Gaussian "bump" orography that can be used to test the LT model.
 
-Default parameter values create the field needed to reproduce Figure 4c in Smith and Barstad (2004)."""
+Default parameter values create the field needed to reproduce Figure 4 in Smith and Barstad (2004)."""
 
     def canExecute(self):
         return has_numpy, "NumPy is not installed"
