@@ -43,10 +43,14 @@ from qgis.core import (Qgis,
                        QgsProcessingParameterFeatureSource,
                        QgsProcessingParameterFeatureSink)
 
-from .linear_orog_precip import Constants, orographic_precipitation
-
 import os
-import numpy
+
+try:
+    import numpy
+    from .linear_orog_precip import Constants, orographic_precipitation
+    has_numpy = True
+except:
+    has_numpy = False
 
 def raster_to_array(layer, band=1):
     "Convert a raster layer to a NumPy array."
@@ -302,3 +306,6 @@ Click on the "Help" button below for more information.
         path = os.path.dirname(__file__)
 
         return "file://" + os.path.join(path, "help", "help.html")
+
+    def canExecute(self):
+        return has_numpy, "NumPy is not installed"

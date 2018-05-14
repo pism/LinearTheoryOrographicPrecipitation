@@ -43,8 +43,12 @@ from qgis.core import (Qgis,
                        QgsProcessingParameterDefinition,
                        QgsProcessingParameterRasterDestination)
 
-import numpy as np
-from .linear_orog_precip import gaussian_bump
+try:
+    import numpy as np
+    from .linear_orog_precip import gaussian_bump
+    has_numpy = True
+except:
+    has_numpy = False
 
 class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
     """
@@ -224,3 +228,6 @@ class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
 Create a raster layer containing a Gaussian "bump" orography that can be used to test the LT model.
 
 Default parameter values create the field needed to reproduce Figure 4c in Smith and Barstad (2004)."""
+
+    def canExecute(self):
+        return has_numpy, "NumPy is not installed"
