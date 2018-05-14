@@ -2,7 +2,7 @@
 name=Linear Theory Orographic Precipitation
 qgisMinimumVersion=3.0
 description=Implements the Smith & Barstad (2004) LT model
-version=0.1
+version=3.0
 author=Andy Aschwanden and Constantine Khrulev
 email=ckhroulev@alaska.edu
 
@@ -15,7 +15,8 @@ repository=https://github.com/ckhroulev/LinearTheoryOrographicPrecipitation
 # Recommended items:
 
 # Uncomment the following line and add your changelog:
-# changelog=
+changelog=3.0
+        - Port to QGIS3
 
 # Tags are comma separated with spaces allowed
 tags=python,numpy
