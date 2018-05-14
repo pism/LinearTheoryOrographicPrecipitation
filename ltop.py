@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 """
 /***************************************************************************
  LTOrographicPrecipitation
@@ -19,21 +20,36 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
- This script initializes the plugin, making it known to QGIS.
 """
 
 __author__ = 'Andy Aschwanden and Constantine Khrulev'
 __date__ = '2018-05-02'
 __copyright__ = '(C) 2018 by Andy Aschwanden and Constantine Khrulev'
 
+# This will get replaced with a git SHA1 when you do a git archive
 
-# noinspection PyPep8Naming
-def classFactory(iface):  # pylint: disable=invalid-name
-    """Load LTOrographicPrecipitation class from file LTOrographicPrecipitation.
+__revision__ = '$Format:%H$'
 
-    :param iface: A QGIS interface instance.
-    :type iface: QgsInterface
-    """
-    #
-    from .ltop import LTOrographicPrecipitationPlugin
-    return LTOrographicPrecipitationPlugin()
+import os
+import sys
+import inspect
+
+from qgis.core import QgsProcessingAlgorithm, QgsApplication
+from .ltop_provider import LTOrographicPrecipitationProvider
+
+cmd_folder = os.path.split(inspect.getfile(inspect.currentframe()))[0]
+
+if cmd_folder not in sys.path:
+    sys.path.insert(0, cmd_folder)
+
+
+class LTOrographicPrecipitationPlugin(object):
+
+    def __init__(self):
+        self.provider = LTOrographicPrecipitationProvider()
+
+    def initGui(self):
+        QgsApplication.processingRegistry().addProvider(self.provider)
+
+    def unload(self):
+        QgsApplication.processingRegistry().removeProvider(self.provider)
