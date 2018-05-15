@@ -8,7 +8,7 @@
                               -------------------
         begin                : 2018-05-02
         copyright            : (C) 2018 by Andy Aschwanden and Constantine Khrulev
-        email                : ckhroulev@alaska.edu
+        email                : uaf-pism@alaska.edu
  ***************************************************************************/
 
 /***************************************************************************

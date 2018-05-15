@@ -4,7 +4,7 @@ qgisMinimumVersion=3.0
 description=Implements the Smith & Barstad (2004) LT model
 version=3.0
 author=Andy Aschwanden and Constantine Khrulev
-email=ckhroulev@alaska.edu
+email=uaf-pism@alaska.edu
 
 about=This plugin implements the Linear Theory of Orographic Precipitation model by Smith and Barstad (2004). The model includes airflow dynamics, condensed water advection, and downslope evaporation. Vertically integrated steady-state governing equations for condensed water are solved using Fourier transform techniques. The precipitation field is computed quickly by multiplying the terrain transform by a wavenumber-dependent transfer function. The code is fast even for larger rasters if sufficient RAM is available. However, processing large rasters with insuffiecient RAM is very slow. Before using this plugin, please read the original manuscript of Smith and Barstad (2004) to understand the model physics and its limitations.
 
@@ -19,11 +19,10 @@ changelog=3.0
         - Port to QGIS3 and moved to the PISM organization
 
 # Tags are comma separated with spaces allowed
-tags=python,numpy
+tags=numpy,precipitation,processing,python,raster
 
-homepage=https://github.com/ckhroulev/LinearTheoryOrographicPrecipitation
-category=Analysis
-icon=icon.png
+homepage=https://github.com/pism/LinearTheoryOrographicPrecipitation
+category=Raster
 # experimental flag
 experimental=False
 
