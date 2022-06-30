@@ -1,4 +1,4 @@
-[![License: GPL-3.0](https://img.shields.io:/github/license/pism/LinearTheoryOrographicPrecipitation)](https://opensource.org/licenses/GPL-3.0)
+[![DOI](https://zenodo.org/badge/67455455.svg)](https://zenodo.org/badge/latestdoi/67455455) [![License: GPL-3.0](https://img.shields.io:/github/license/pism/LinearTheoryOrographicPrecipitation)](https://opensource.org/licenses/GPL-3.0)
 
 
 # Welcome to the Linear Theory (LT) of Orographic Precipitation Model QGIS plugin
