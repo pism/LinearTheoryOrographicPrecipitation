@@ -1,0 +1,44 @@
+exclude: "docs|node_modules|migrations|.git|.tox"
+default_stages: [commit]
+fail_fast: true
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        exclude: conda/meta.yaml
+
+  # Can run individually with `pre-commit run black --all-files`
+  - repo: https://github.com/psf/black
+    rev: 23.3.0
+    hooks:
+      - id: black
+
+  # Can run individually with `pre-commit run isort --all-files`
+  - repo: https://github.com/timothycrosley/isort
+    rev: 5.12.0
+    hooks:
+      - id: isort
+        args:
+          - --profile
+          - black
+
+  # Can run individually with `pre-commit run flake8 --all-files`
+  # Need to use flake8 GitHub mirror due to CentOS git issue with GitLab
+  # https://github.com/pre-commit/pre-commit/issues/1206
+  - repo: https://github.com/pycqa/flake8
+    rev: 6.0.0
+    hooks:
+      - id: flake8
+        args: ["--config=setup.cfg"]
+        additional_dependencies: [flake8-isort]
+
+  # Can run individually with `pre-commit run mypy --all-files`
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.3.0
+    hooks:
+      - id: mypy
+        args: ["--config=setup.cfg"]

@@ -22,9 +22,9 @@
  This script initializes the plugin, making it known to QGIS.
 """
 
-__author__ = 'Andy Aschwanden and Constantine Khrulev'
-__date__ = '2018-05-02'
-__copyright__ = '(C) 2018-2020 by Andy Aschwanden and Constantine Khrulev'
+__author__ = "Andy Aschwanden and Constantine Khrulev"
+__date__ = "2018-05-02"
+__copyright__ = "(C) 2018-2020 by Andy Aschwanden and Constantine Khrulev"
 
 
 # noinspection PyPep8Naming
@@ -36,4 +36,5 @@ def classFactory(iface):  # pylint: disable=invalid-name
     """
     #
     from .ltop import LTOrographicPrecipitationPlugin
+
     return LTOrographicPrecipitationPlugin()

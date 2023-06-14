@@ -2,7 +2,7 @@
 name=Linear Theory Orographic Precipitation
 qgisMinimumVersion=3.0
 description=Implements the Smith & Barstad (2004) LT model
-version=3.1
+version=4.0a1
 author=Andy Aschwanden and Constantine Khrulev
 email=uaf-pism@alaska.edu
 
@@ -16,6 +16,7 @@ repository=https://github.com/pism/LinearTheoryOrographicPrecipitation
 
 # Uncomment the following line and add your changelog:
 changelog=
+     4.0a1 - Rewriting classes and adding git pre-commits
      3.1 - Replace the implementation, add a verification test
      3.0 - Port to QGIS3 and moved to the PISM organization
 
@@ -29,4 +30,3 @@ experimental=False
 
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False
-

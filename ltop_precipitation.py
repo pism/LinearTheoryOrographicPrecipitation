@@ -22,35 +22,37 @@
  ***************************************************************************/
 """
 
-__author__ = 'Andy Aschwanden and Constantine Khrulev'
-__date__ = '2018-05-02'
-__copyright__ = '(C) 2018-2020 by Andy Aschwanden and Constantine Khrulev'
+__author__ = "Andy Aschwanden and Constantine Khrulev"
+__date__ = "2018-05-02"
+__copyright__ = "(C) 2018-2020 by Andy Aschwanden and Constantine Khrulev"
 
 # This will get replaced with a git SHA1 when you do a git archive
 
-__revision__ = '$Format:%H$'
-
-from PyQt5.QtCore import QCoreApplication
-from qgis.core import (Qgis,
-                       QgsProcessing,
-                       QgsProcessingAlgorithm,
-                       QgsRasterFileWriter,
-                       QgsProcessingParameterRasterLayer,
-                       QgsProcessingParameterRasterDestination,
-                       QgsProcessingParameterBand,
-                       QgsProcessingParameterNumber,
-                       QgsProcessingParameterBoolean,
-                       QgsProcessingParameterFeatureSource,
-                       QgsProcessingParameterFeatureSink)
+__revision__ = "$Format:%H$"
 
 import os
 
+from PyQt5.QtCore import QCoreApplication
+from qgis.core import (
+    Qgis,
+    QgsProcessingAlgorithm,
+    QgsProcessingParameterBand,
+    QgsProcessingParameterBoolean,
+    QgsProcessingParameterNumber,
+    QgsProcessingParameterRasterDestination,
+    QgsProcessingParameterRasterLayer,
+    QgsRasterFileWriter,
+)
+
 try:
     import numpy
+
     from .linear_orog_precip import LTOP
+
     has_numpy = True
 except:
     has_numpy = False
+
 
 def raster_to_array(layer, band=1):
     "Convert a raster layer to a NumPy array."
@@ -59,20 +61,25 @@ def raster_to_array(layer, band=1):
     block = provider.block(band, provider.extent(), width, height)
 
     # supported types
-    types = {Qgis.Byte    : numpy.byte,
-             Qgis.UInt16  : numpy.uint16,
-             Qgis.Int16   : numpy.int16,
-             Qgis.UInt32  : numpy.uint32,
-             Qgis.Int32   : numpy.int32,
-             Qgis.Float32 : numpy.float32,
-             Qgis.Float64 : numpy.float64}
+    types = {
+        Qgis.Byte: numpy.byte,
+        Qgis.UInt16: numpy.uint16,
+        Qgis.Int16: numpy.int16,
+        Qgis.UInt32: numpy.uint32,
+        Qgis.Int32: numpy.int32,
+        Qgis.Float32: numpy.float32,
+        Qgis.Float64: numpy.float64,
+    }
 
     try:
         T = types[block.dataType()]
     except KeyError:
-        raise NotImplementedError("raster type {} is not supported".format(block.dataType()))
+        raise NotImplementedError(
+            "raster type {} is not supported".format(block.dataType())
+        )
 
     return numpy.ndarray((height, width), dtype=T, buffer=block.data().data())
+
 
 def grid(layer):
     "Build x and y coordinates of a raster layer."
@@ -97,111 +104,163 @@ def grid(layer):
 
     return x, y
 
+
 class LTOrographicPrecipitationAlgorithm(QgsProcessingAlgorithm):
     # Constants used to refer to parameters and outputs. They will be
     # used when calling the algorithm from another algorithm, or when
     # calling from the QGIS console.
 
-    OUTPUT       = 'OUTPUT'
-    INPUT_RASTER = 'INPUT_RASTER'
-    RASTER_BAND  = 'RASTER_BAND'
+    OUTPUT = "OUTPUT"
+    INPUT_RASTER = "INPUT_RASTER"
+    RASTER_BAND = "RASTER_BAND"
 
-    TAU_C          = 'TAU_C'
-    TAU_F          = 'TAU_F'
-    P0             = 'P0'
-    P_SCALE        = 'P_SCALE'
-    NM             = 'NM'
-    HW             = 'HW'
-    LATITUDE       = 'LATITUDE'
-    WIND_DIRECTION = 'WIND_DIRECTION'
-    WIND_SPEED     = 'WIND_SPEED'
-    TRUNCATE       = 'TRUNCATE'
+    TAU_C = "TAU_C"
+    TAU_F = "TAU_F"
+    P0 = "P0"
+    P_SCALE = "P_SCALE"
+    NM = "NM"
+    HW = "HW"
+    LATITUDE = "LATITUDE"
+    WIND_DIRECTION = "WIND_DIRECTION"
+    WIND_SPEED = "WIND_SPEED"
+    TRUNCATE = "TRUNCATE"
 
     def initAlgorithm(self, config):
         """
         Define inputs and output of the algorithm.
         """
 
-        self.addParameter(QgsProcessingParameterRasterLayer(self.INPUT_RASTER,
-                                                            self.tr('Input DEM (meters above sea level)')))
-        self.addParameter(QgsProcessingParameterBand(self.RASTER_BAND,
-                                                     self.tr('Band number'),
-                                                     1,
-                                                     self.INPUT_RASTER))
+        self.addParameter(
+            QgsProcessingParameterRasterLayer(
+                self.INPUT_RASTER, self.tr("Input DEM (meters above sea level)")
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterBand(
+                self.RASTER_BAND, self.tr("Band number"), 1, self.INPUT_RASTER
+            )
+        )
         model = LTOP()
 
-        self.addParameter(QgsProcessingParameterNumber(self.TAU_C,
-                                                       self.tr("Conversion time (seconds)"),
-                                                       QgsProcessingParameterNumber.Double,
-                                                       defaultValue=model.tau_c,
-                                                       minValue=0.0))
-        self.addParameter(QgsProcessingParameterNumber(self.TAU_F,
-                                                       self.tr("Fallout time (seconds)"),
-                                                       QgsProcessingParameterNumber.Double,
-                                                       defaultValue=model.tau_f,
-                                                       minValue=0.0))
-        self.addParameter(QgsProcessingParameterNumber(self.P0,
-                                                       self.tr("Background precipitation rate (mm/hour)"),
-                                                       QgsProcessingParameterNumber.Double,
-                                                       defaultValue=model.P0,
-                                                       minValue=0.0))
-        self.addParameter(QgsProcessingParameterNumber(self.P_SCALE,
-                                                       self.tr("Precipitation scale factor"),
-                                                       QgsProcessingParameterNumber.Double,
-                                                       defaultValue=1.0,
-                                                       minValue=0.0))
-        self.addParameter(QgsProcessingParameterNumber(self.NM,
-                                                       self.tr("Moist stability frequency (1/second)"),
-                                                       QgsProcessingParameterNumber.Double,
-                                                       defaultValue=model.Nm,
-                                                       minValue=0.0))
-        self.addParameter(QgsProcessingParameterNumber(self.HW,
-                                                       self.tr("Water vapor scale height (meters)"),
-                                                       QgsProcessingParameterNumber.Double,
-                                                       defaultValue=model.Hw,
-                                                       minValue=0.0))
-        self.addParameter(QgsProcessingParameterNumber(self.LATITUDE,
-                                                       self.tr("Latitude used to compute the Coriolis force"),
-                                                       QgsProcessingParameterNumber.Double,
-                                                       defaultValue=model.latitude,
-                                                       minValue=-90.0,
-                                                       maxValue=90.0))
-        self.addParameter(QgsProcessingParameterNumber(self.WIND_DIRECTION,
-                                                       self.tr("The direction the wind is coming from (0 is north, 270 is west)"),
-                                                       QgsProcessingParameterNumber.Double,
-                                                       defaultValue=model.direction,
-                                                       minValue=0.0,
-                                                       maxValue=360.0))
-        self.addParameter(QgsProcessingParameterNumber(self.WIND_SPEED,
-                                                       self.tr("Wind speed (m/second)"),
-                                                       QgsProcessingParameterNumber.Double,
-                                                       defaultValue=model.speed,
-                                                       minValue=0.0))
-        self.addParameter(QgsProcessingParameterBoolean(self.TRUNCATE,
-                                                       self.tr("Truncate negative precipitation"),
-                                                       defaultValue=True))
+        self.addParameter(
+            QgsProcessingParameterNumber(
+                self.TAU_C,
+                self.tr("Conversion time (seconds)"),
+                QgsProcessingParameterNumber.Double,
+                defaultValue=model.tau_c,
+                minValue=0.0,
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterNumber(
+                self.TAU_F,
+                self.tr("Fallout time (seconds)"),
+                QgsProcessingParameterNumber.Double,
+                defaultValue=model.tau_f,
+                minValue=0.0,
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterNumber(
+                self.P0,
+                self.tr("Background precipitation rate (mm/hour)"),
+                QgsProcessingParameterNumber.Double,
+                defaultValue=model.P0,
+                minValue=0.0,
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterNumber(
+                self.P_SCALE,
+                self.tr("Precipitation scale factor"),
+                QgsProcessingParameterNumber.Double,
+                defaultValue=1.0,
+                minValue=0.0,
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterNumber(
+                self.NM,
+                self.tr("Moist stability frequency (1/second)"),
+                QgsProcessingParameterNumber.Double,
+                defaultValue=model.Nm,
+                minValue=0.0,
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterNumber(
+                self.HW,
+                self.tr("Water vapor scale height (meters)"),
+                QgsProcessingParameterNumber.Double,
+                defaultValue=model.Hw,
+                minValue=0.0,
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterNumber(
+                self.LATITUDE,
+                self.tr("Latitude used to compute the Coriolis force"),
+                QgsProcessingParameterNumber.Double,
+                defaultValue=model.latitude,
+                minValue=-90.0,
+                maxValue=90.0,
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterNumber(
+                self.WIND_DIRECTION,
+                self.tr(
+                    "The direction the wind is coming from (0 is north, 270 is west)"
+                ),
+                QgsProcessingParameterNumber.Double,
+                defaultValue=model.direction,
+                minValue=0.0,
+                maxValue=360.0,
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterNumber(
+                self.WIND_SPEED,
+                self.tr("Wind speed (m/second)"),
+                QgsProcessingParameterNumber.Double,
+                defaultValue=model.speed,
+                minValue=0.0,
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterBoolean(
+                self.TRUNCATE,
+                self.tr("Truncate negative precipitation"),
+                defaultValue=True,
+            )
+        )
 
-        self.addParameter(QgsProcessingParameterRasterDestination(self.OUTPUT,
-                                                                  self.tr('Precipitation')))
+        self.addParameter(
+            QgsProcessingParameterRasterDestination(
+                self.OUTPUT, self.tr("Precipitation")
+            )
+        )
 
     def prepareAlgorithm(self, parameters, context, feedback):
         "Process inputs and update derived contants."
-        self.orography = self.parameterAsRasterLayer(parameters, self.INPUT_RASTER, context)
+        self.orography = self.parameterAsRasterLayer(
+            parameters, self.INPUT_RASTER, context
+        )
         self.bandNumber = self.parameterAsInt(parameters, self.RASTER_BAND, context)
 
         self.truncate = self.parameterAsBool(parameters, self.TRUNCATE, context)
 
         m = LTOP()
 
-        m.tau_c     = self.parameterAsDouble(parameters, self.TAU_C, context)
-        m.tau_f     = self.parameterAsDouble(parameters, self.TAU_F, context)
-        m.P0        = self.parameterAsDouble(parameters, self.P0, context)
-        m.P_scale   = self.parameterAsDouble(parameters, self.P_SCALE, context)
-        m.Nm        = self.parameterAsDouble(parameters, self.NM, context)
-        m.Hw        = self.parameterAsDouble(parameters, self.HW, context)
-        m.latitude  = self.parameterAsDouble(parameters, self.LATITUDE, context)
+        m.tau_c = self.parameterAsDouble(parameters, self.TAU_C, context)
+        m.tau_f = self.parameterAsDouble(parameters, self.TAU_F, context)
+        m.P0 = self.parameterAsDouble(parameters, self.P0, context)
+        m.P_scale = self.parameterAsDouble(parameters, self.P_SCALE, context)
+        m.Nm = self.parameterAsDouble(parameters, self.NM, context)
+        m.Hw = self.parameterAsDouble(parameters, self.HW, context)
+        m.latitude = self.parameterAsDouble(parameters, self.LATITUDE, context)
         m.direction = self.parameterAsDouble(parameters, self.WIND_DIRECTION, context)
-        m.speed     = self.parameterAsDouble(parameters, self.WIND_SPEED, context)
+        m.speed = self.parameterAsDouble(parameters, self.WIND_SPEED, context)
         m.update()
 
         self.model = m
@@ -218,30 +277,28 @@ class LTOrographicPrecipitationAlgorithm(QgsProcessingAlgorithm):
         x, y = grid(self.orography)
 
         dx = x[1] - x[0]
-        dy = y[0] - y[1]        # note: y is decreasing
+        dy = y[0] - y[1]  # note: y is decreasing
 
         assert dx > 0
         assert dy > 0
 
         P = self.model.run(dem, dx, dy, self.truncate)
 
-        outputFormat = QgsRasterFileWriter.driverForExtension(os.path.splitext(self.outputFile)[1])
+        outputFormat = QgsRasterFileWriter.driverForExtension(
+            os.path.splitext(self.outputFile)[1]
+        )
 
         writer = QgsRasterFileWriter(self.outputFile)
-        writer.setOutputProviderKey('gdal')
+        writer.setOutputProviderKey("gdal")
         writer.setOutputFormat(outputFormat)
-        provider = writer.createOneBandRaster(Qgis.Float64,
-                                              x.size,
-                                              y.size,
-                                              self.orography.extent(),
-                                              self.orography.crs())
+        provider = writer.createOneBandRaster(
+            Qgis.Float64, x.size, y.size, self.orography.extent(), self.orography.crs()
+        )
         provider.setNoDataValue(1, -9999)
 
-        provider.write(bytes(P.data),
-                       1,       # band
-                       x.size,  # width
-                       y.size,  # height
-                       0, 0)    # offset
+        provider.write(
+            bytes(P.data), 1, x.size, y.size, 0, 0  # band  # width  # height
+        )  # offset
 
         provider.setEditable(False)
 
@@ -255,7 +312,7 @@ class LTOrographicPrecipitationAlgorithm(QgsProcessingAlgorithm):
         lowercase alphanumeric characters only and no spaces or other
         formatting characters.
         """
-        return 'precipitation'
+        return "precipitation"
 
     def displayName(self):
         """
@@ -279,10 +336,10 @@ class LTOrographicPrecipitationAlgorithm(QgsProcessingAlgorithm):
         contain lowercase alphanumeric characters only and no spaces or other
         formatting characters.
         """
-        return 'model'
+        return "model"
 
     def tr(self, string):
-        return QCoreApplication.translate('Processing', string)
+        return QCoreApplication.translate("Processing", string)
 
     def createInstance(self):
         return LTOrographicPrecipitationAlgorithm()

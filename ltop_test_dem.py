@@ -22,33 +22,38 @@
  ***************************************************************************/
 """
 
-__author__ = 'Andy Aschwanden and Constantine Khrulev'
-__date__ = '2018-05-02'
-__copyright__ = '(C) 2018-2020 by Andy Aschwanden and Constantine Khrulev'
+__author__ = "Andy Aschwanden and Constantine Khrulev"
+__date__ = "2018-05-02"
+__copyright__ = "(C) 2018-2020 by Andy Aschwanden and Constantine Khrulev"
 
 # This will get replaced with a git SHA1 when you do a git archive
 
-__revision__ = '$Format:%H$'
+__revision__ = "$Format:%H$"
 
 import os
+
 from PyQt5.QtCore import QCoreApplication
-from qgis.core import (Qgis,
-                       QgsProcessing,
-                       QgsProcessingAlgorithm,
-                       QgsRasterFileWriter,
-                       QgsProcessingParameterNumber,
-                       QgsProcessingParameterPoint,
-                       QgsProcessingParameterCrs,
-                       QgsProcessingParameterExtent,
-                       QgsProcessingParameterDefinition,
-                       QgsProcessingParameterRasterDestination)
+from qgis.core import (
+    Qgis,
+    QgsProcessingAlgorithm,
+    QgsProcessingParameterCrs,
+    QgsProcessingParameterDefinition,
+    QgsProcessingParameterExtent,
+    QgsProcessingParameterNumber,
+    QgsProcessingParameterPoint,
+    QgsProcessingParameterRasterDestination,
+    QgsRasterFileWriter,
+)
 
 try:
     import numpy as np
+
     from .linear_orog_precip import gaussian_bump
+
     has_numpy = True
 except:
     has_numpy = False
+
 
 class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
     """
@@ -59,73 +64,93 @@ class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
     # used when calling the algorithm from another algorithm, or when
     # calling from the QGIS console.
 
-    OUTPUT     = 'OUTPUT'
-    TARGET_CRS = 'TARGET_CRS'
-    EXTENT     = 'EXTENT'
-    DX         = 'DX'
-    DY         = 'DY'
-    SIGMA_X    = 'SIGMA_X'
-    SIGMA_Y    = 'SIGMA_Y'
-    CENTER     = 'CENTER'
+    OUTPUT = "OUTPUT"
+    TARGET_CRS = "TARGET_CRS"
+    EXTENT = "EXTENT"
+    DX = "DX"
+    DY = "DY"
+    SIGMA_X = "SIGMA_X"
+    SIGMA_Y = "SIGMA_Y"
+    CENTER = "CENTER"
 
     def initAlgorithm(self, config):
-        x_min   = -100e3
-        x_max   = 200e3
-        y_min   = -150e3
-        y_max   = 150e3
-        dx      = 750
-        dy      = 750
-        x0      = -25e3
-        y0      = 0.0
+        x_min = -100e3
+        x_max = 200e3
+        y_min = -150e3
+        y_max = 150e3
+        dx = 750
+        dy = 750
+        x0 = -25e3
+        y0 = 0.0
         sigma_x = 15e3
         sigma_y = 15e3
 
-        self.addParameter(QgsProcessingParameterCrs(self.TARGET_CRS,
-                                                    self.tr('Target CRS'),
-                                                    'ProjectCrs'))
+        self.addParameter(
+            QgsProcessingParameterCrs(
+                self.TARGET_CRS, self.tr("Target CRS"), "ProjectCrs"
+            )
+        )
 
-        self.addParameter(QgsProcessingParameterExtent(self.EXTENT,
-                                                       self.tr('Extent'),
-                                                       "{}, {}, {}, {}".format(x_min, x_max,
-                                                                               y_min, y_max)))
+        self.addParameter(
+            QgsProcessingParameterExtent(
+                self.EXTENT,
+                self.tr("Extent"),
+                "{}, {}, {}, {}".format(x_min, x_max, y_min, y_max),
+            )
+        )
 
-        self.addParameter(QgsProcessingParameterNumber(self.DX,
-                                                       self.tr("Grid spacing (dx, meters)"),
-                                                       QgsProcessingParameterNumber.Double,
-                                                       defaultValue=dx,
-                                                       minValue=0.0))
-        self.addParameter(QgsProcessingParameterNumber(self.DY,
-                                                       self.tr("Grid spacing (dy, meters)"),
-                                                       QgsProcessingParameterNumber.Double,
-                                                       defaultValue=dy,
-                                                       minValue=0.0))
+        self.addParameter(
+            QgsProcessingParameterNumber(
+                self.DX,
+                self.tr("Grid spacing (dx, meters)"),
+                QgsProcessingParameterNumber.Double,
+                defaultValue=dx,
+                minValue=0.0,
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterNumber(
+                self.DY,
+                self.tr("Grid spacing (dy, meters)"),
+                QgsProcessingParameterNumber.Double,
+                defaultValue=dy,
+                minValue=0.0,
+            )
+        )
 
-        self.addParameter(QgsProcessingParameterPoint(self.CENTER,
-                                                      self.tr("Center"),
-                                                      "{}, {}".format(x0, y0)))
+        self.addParameter(
+            QgsProcessingParameterPoint(
+                self.CENTER, self.tr("Center"), "{}, {}".format(x0, y0)
+            )
+        )
 
-        s_x = QgsProcessingParameterNumber(self.SIGMA_X,
-                                           self.tr("Spread in the X direction (sigma_x)"),
-                                           QgsProcessingParameterNumber.Double,
-                                           defaultValue=sigma_x,
-                                           minValue=0.0)
+        s_x = QgsProcessingParameterNumber(
+            self.SIGMA_X,
+            self.tr("Spread in the X direction (sigma_x)"),
+            QgsProcessingParameterNumber.Double,
+            defaultValue=sigma_x,
+            minValue=0.0,
+        )
         s_x.setFlags(s_x.flags() | QgsProcessingParameterDefinition.FlagAdvanced)
         self.addParameter(s_x)
 
-        s_y = QgsProcessingParameterNumber(self.SIGMA_Y,
-                                           self.tr("Spread in the Y direction (sigma_y)"),
-                                           QgsProcessingParameterNumber.Double,
-                                           defaultValue=sigma_y,
-                                           minValue=0.0)
+        s_y = QgsProcessingParameterNumber(
+            self.SIGMA_Y,
+            self.tr("Spread in the Y direction (sigma_y)"),
+            QgsProcessingParameterNumber.Double,
+            defaultValue=sigma_y,
+            minValue=0.0,
+        )
         s_y.setFlags(s_y.flags() | QgsProcessingParameterDefinition.FlagAdvanced)
         self.addParameter(s_y)
 
-        self.addParameter(QgsProcessingParameterRasterDestination(self.OUTPUT,
-                                                                  self.tr('Testing DEM')))
+        self.addParameter(
+            QgsProcessingParameterRasterDestination(self.OUTPUT, self.tr("Testing DEM"))
+        )
 
     def prepareAlgorithm(self, parameters, context, feedback):
         "Prepare and validate parameter values."
-        self.crs    = self.parameterAsCrs(parameters, self.TARGET_CRS, context)
+        self.crs = self.parameterAsCrs(parameters, self.TARGET_CRS, context)
         self.extent = self.parameterAsExtent(parameters, self.EXTENT, context, self.crs)
         self.center = self.parameterAsPoint(parameters, self.CENTER, context, self.crs)
 
@@ -136,10 +161,14 @@ class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
         self.sigma_y = self.parameterAsDouble(parameters, self.SIGMA_Y, context)
 
         if self.dx > self.extent.width():
-            feedback.reportError(self.tr("Grid spacing cannot exceed grid extent (x direction)."))
+            feedback.reportError(
+                self.tr("Grid spacing cannot exceed grid extent (x direction).")
+            )
             return False
         if self.dy > self.extent.height():
-            feedback.reportError(self.tr("Grid spacing cannot exceed grid extent (y direction)."))
+            feedback.reportError(
+                self.tr("Grid spacing cannot exceed grid extent (y direction).")
+            )
             return False
 
         self.outputFile = self.parameterAsOutputLayer(parameters, self.OUTPUT, context)
@@ -159,25 +188,37 @@ class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
         x0 = self.center.x()
         y0 = self.center.y()
 
-        outputFormat = QgsRasterFileWriter.driverForExtension(os.path.splitext(self.outputFile)[1])
+        outputFormat = QgsRasterFileWriter.driverForExtension(
+            os.path.splitext(self.outputFile)[1]
+        )
 
         rows = max([np.ceil(extent.height() / self.dy), 1.0])
         cols = max([np.ceil(extent.width() / self.dx), 1.0])
 
         writer = QgsRasterFileWriter(self.outputFile)
-        writer.setOutputProviderKey('gdal')
+        writer.setOutputProviderKey("gdal")
         writer.setOutputFormat(outputFormat)
-        provider = writer.createOneBandRaster(Qgis.Float64, cols, rows, extent, self.crs)
+        provider = writer.createOneBandRaster(
+            Qgis.Float64, cols, rows, extent, self.crs
+        )
         provider.setNoDataValue(1, -9999)
 
-        _, _, data = gaussian_bump(x_min, x_max, y_min, y_max, self.dx, self.dy,
-                                   x0=x0, y0=y0, sigma_x=self.sigma_x, sigma_y=self.sigma_y)
+        _, _, data = gaussian_bump(
+            x_min,
+            x_max,
+            y_min,
+            y_max,
+            self.dx,
+            self.dy,
+            x0=x0,
+            y0=y0,
+            sigma_x=self.sigma_x,
+            sigma_y=self.sigma_y,
+        )
 
-        provider.write(bytes(data.data),
-                       1,       # band
-                       cols,    # width
-                       rows,    # height
-                       0, 0)    # offset
+        provider.write(
+            bytes(data.data), 1, cols, rows, 0, 0  # band  # width  # height
+        )  # offset
 
         provider.setEditable(False)
 
@@ -191,7 +232,7 @@ class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
         lowercase alphanumeric characters only and no spaces or other
         formatting characters.
         """
-        return 'bump'
+        return "bump"
 
     def displayName(self):
         """
@@ -215,10 +256,10 @@ class LTOrographicPrecipitationTestInput(QgsProcessingAlgorithm):
         contain lowercase alphanumeric characters only and no spaces or other
         formatting characters.
         """
-        return 'testing'
+        return "testing"
 
     def tr(self, string):
-        return QCoreApplication.translate('Processing', string)
+        return QCoreApplication.translate("Processing", string)
 
     def createInstance(self):
         return LTOrographicPrecipitationTestInput()

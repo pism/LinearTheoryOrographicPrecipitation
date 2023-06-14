@@ -22,19 +22,20 @@
  ***************************************************************************/
 """
 
-__author__ = 'Andy Aschwanden and Constantine Khrulev'
-__date__ = '2018-05-02'
-__copyright__ = '(C) 2018-2020 by Andy Aschwanden and Constantine Khrulev'
+__author__ = "Andy Aschwanden and Constantine Khrulev"
+__date__ = "2018-05-02"
+__copyright__ = "(C) 2018-2020 by Andy Aschwanden and Constantine Khrulev"
 
 # This will get replaced with a git SHA1 when you do a git archive
 
-__revision__ = '$Format:%H$'
+__revision__ = "$Format:%H$"
 
+import inspect
 import os
 import sys
-import inspect
 
-from qgis.core import QgsProcessingAlgorithm, QgsApplication
+from qgis.core import QgsApplication
+
 from .ltop_provider import LTOrographicPrecipitationProvider
 
 cmd_folder = os.path.split(inspect.getfile(inspect.currentframe()))[0]
@@ -44,7 +45,6 @@ if cmd_folder not in sys.path:
 
 
 class LTOrographicPrecipitationPlugin(object):
-
     def __init__(self):
         self.provider = LTOrographicPrecipitationProvider()
 

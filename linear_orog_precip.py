@@ -1,64 +1,144 @@
-import numpy as np
+"""Linear Theory of Orographic Precipitation (LTOP) model"""
 
 import logging
-logger = logging.getLogger('LTOP')
 
-np.seterr(divide='ignore', invalid='ignore')
-class LTOP(object):
+import numpy as np
+import pylab as plt
+logger = logging.getLogger("LTOP")
+
+np.seterr(divide="ignore", invalid="ignore")
+
+
+class LTOP():
     "Linear Theory of Orographic Precipitation (LTOP) model"
 
-    tau_c = 1000.0
-    "conversion time [s]"
+    def __init__(
+        self,
+        tau_c: float = 1000.0,
+        tau_f: float = 1000.0,
+        P0: float = 0.0,
+        P_scale: float = 1.0,
+        Nm: float = 0.005,
+        Hw: float = 2500,
+        latitude: float = 45.0,
+        direction: float = 270.0,
+        speed: float = 15.0,
+        Theta_m: float = -6.5,
+        rho_Sref: float = 7.4e-3,
+        gamma: float = -5.8,
+    ):
+        super().__init__()
 
-    tau_f = 1000.0
-    "fallout time [s]"
+        self.tau_c = tau_c  # "conversion time [s]"
+        self.tau_f = tau_f  # "fallout time [s]"
+        self.P0 = P0  # "Background precipitation rate [mm hr-1]"
+        self.P_scale = P_scale  # "Precipitation scale factor"
+        self.Nm = Nm  # "moist stability frequency [s-1]"
+        self.Hw = Hw  # "Water vapor scale height [m]"
+        self.latitude = latitude  # "Latitude used to compute the Coriolis force"
+        self.direction = direction  # "Wind direction, 0 is north, 270 is west"
+        self.speed = speed  # "Wind speed [m s-1]"
+        self.Theta_m = Theta_m
+        self.rho_Sref = rho_Sref
+        self.gamma = gamma
+        self.f: float = 0.0  # "Coriolis force"
+        self.u: float = 0.0  # "u component of the wind velocity"
+        self.v: float = 0.0  # "v component of the wind velocity"
+        self.Cw: float = 0.0
 
-    P0 = 0.0
-    'Background precipitation rate [mm hr-1]'
-
-    P_scale = 1.0
-    'Precipitation scale factor'
-
-    Nm = 0.005
-    'moist stability frequency [s-1]'
-
-    Hw = 2500
-    'Water vapor scale height [m]'
-
-    latitude = 45.0
-    "Latitude used to compute the Coriolis force"
-
-    direction = 270.0
-    "Wind direction, 0 is north, 270 is west"
-
-    speed = 15.0
-    "Wind speed"
-
-    f = None
-    "Coriolis force"
-
-    u = None
-    "u component of the wind velocity"
-
-    v = None
-    "v component of the wind velocity"
-
-    Cw = None
-    "Uplift sensitivity factor [kg m-3]"
-
-    Theta_m = -6.5
-    "moist adiabatic lapse rate [K / km]"
-
-    rho_Sref = 7.4e-3
-    "reference density [kg m-3]"
-
-    gamma = -5.8
-    "adiabatic lapse rate [K / km]"
-
-    def __init__(self):
         self.update()
 
-    def run(self, orography, dx, dy, truncate=True):
+    @property
+    def tau_c(self):
+        return self._tau_c
+
+    @tau_c.setter
+    def tau_c(self, value):
+        self._tau_c = value
+
+    @property
+    def tau_f(self):
+        return self._tau_f
+
+    @tau_f.setter
+    def tau_f(self, value):
+        self._tau_f = value
+
+    @property
+    def P0(self):
+        return self._P0
+
+    @P0.setter
+    def P0(self, value):
+        self._P0 = value
+
+    @property
+    def P_scale(self):
+        return self._P_scale
+
+    @P_scale.setter
+    def P_scale(self, value):
+        self._P_scale = value
+
+    @property
+    def Nm(self):
+        return self._Nm
+
+    @Nm.setter
+    def Nm(self, value):
+        self._Nm = value
+
+    @property
+    def Hw(self):
+        return self._Hw
+
+    @Hw.setter
+    def Hw(self, value):
+        self._Hw = value
+
+    @property
+    def latitude(self):
+        return self._latitude
+
+    @latitude.setter
+    def latitude(self, value):
+        self._latitude = value
+
+    @property
+    def direction(self):
+        return self._direction
+
+    @direction.setter
+    def direction(self, value):
+        self._direction = value
+
+    @property
+    def Theta_m(self):
+        return self._Theta_m
+
+    @Theta_m.setter
+    def Theta_m(self, value):
+        self._Theta_m = value
+
+    @property
+    def rho_Sref(self):
+        return self._rho_Sref
+
+    @rho_Sref.setter
+    def rho_Sref(self, value):
+        self._rho_Sref = value
+
+    @property
+    def gamma(self):
+        return self._gamma
+
+    @gamma.setter
+    def gamma(self, value):
+        self._gamma = value
+
+    def run(
+        self, orography: np.ndarray, dx: float, dy: float, truncate: bool = True
+    ) -> np.ndarray:
         "Compute orographic precipitation in mm/hour."
         # make sure derived constants are up to date
         self.update()
@@ -69,7 +149,7 @@ class LTOP(object):
 
         pad = max(nrows, ncols)
 
-        h = np.pad(orography, pad, 'constant')
+        h = np.pad(orography, pad, "constant")
         nrows, ncols = h.shape
 
         h_hat = np.fft.fft2(h)
@@ -88,20 +168,26 @@ class LTOP(object):
 
         denominator = sigma**2 - self.f**2
         denominator[np.logical_and(np.fabs(denominator) < eps, denominator >= 0)] = eps
-        denominator[np.logical_and(np.fabs(denominator) < eps, denominator  < 0)] = -eps
+        denominator[np.logical_and(np.fabs(denominator) < eps, denominator < 0)] = -eps
 
         m_squared = (self.Nm**2 - sigma**2) * (kx**2 + ky**2) / denominator
 
-        m = np.sqrt(np.array(m_squared, dtype=np.complex))
+        m = np.sqrt(np.array(m_squared, dtype=np.cdouble))
 
         # Regularization
         nonzero = np.logical_and(m_squared >= 0, sigma != 0)
         m[nonzero] *= np.sign(sigma[nonzero])
 
-        P_hat = h_hat * (self.Cw * 1j * sigma /
-                         ((1 - 1j * m * self.Hw) *
-                          (1 + 1j * sigma * self.tau_c) *
-                          (1 + 1j * sigma * self.tau_f)))
+        P_hat = h_hat * (
+            self.Cw
+            * 1j
+            * sigma
+            / (
+                (1 - 1j * m * self.Hw)
+                * (1 + 1j * sigma * self.tau_c)
+                * (1 + 1j * sigma * self.tau_f)
+            )
+        )
 
         # Convert from wave domain back to space domain
         P = np.real(np.fft.ifft2(P_hat))
@@ -134,7 +220,8 @@ class LTOP(object):
 
         self.Cw = self.rho_Sref * self.Theta_m / self.gamma
 
-def triangle_ridge_grid(dx=5e4, dy=5e4):
+
+def triangle_ridge_grid(dx: float = 5.0e4, dy: float = 5.0e4):
     "Allocate the grid for the synthetic geometry test."
 
     x_min, x_max = -100e3, 100e3
@@ -148,11 +235,15 @@ def triangle_ridge_grid(dx=5e4, dy=5e4):
 
     return x, dx, y, dy
 
-def triangle_ridge(x, A=500.0, d=50e3):
+
+def triangle_ridge(x: np.ndarray, A: float = 500.0, d: float = 50.0e3):
     "Create the 'triangle ridge' topography"
     return np.maximum(A * (1 - np.fabs(x) / d), 0)
 
-def triangle_ridge_exact(x, u, Cw, tau, A=500.0, d=50e3):
+
+def triangle_ridge_exact(
+    x: np.ndarray, u: float, Cw: float, tau: float, A: float = 500.0, d: float = 50.0e3
+):
     """The exact precipitation corresponding to the "triangle ridge" topography."""
     assert d > 0
 
@@ -174,7 +265,8 @@ def triangle_ridge_exact(x, u, Cw, tau, A=500.0, d=50e3):
     except TypeError:
         return 3600 * P(x)
 
-def max_error(spacing, direction):
+
+def max_error(spacing: float, direction: float):
     """Compute the maximum precipitation error compared to the "triangle ridge" exact
     solution.
 
@@ -190,7 +282,7 @@ def max_error(spacing, direction):
     model.direction = direction
     model.latitude = 0.0
 
-    if direction == 90 or direction == 270:
+    if direction == 90.0 or direction == 270.0:
         # east or west
         x, dx, y, dy = triangle_ridge_grid(dx=spacing)
         t = x
@@ -214,9 +306,10 @@ def max_error(spacing, direction):
     if direction == 0 or direction == 90:
         P_exact = triangle_ridge_exact(-t, model.speed, model.Cw, model.tau_f)
     else:
-        P_exact = triangle_ridge_exact(t,  model.speed, model.Cw, model.tau_f)
+        P_exact = triangle_ridge_exact(t, model.speed, model.Cw, model.tau_f)
 
     return np.max(np.fabs(P - P_exact))
+
 
 def convergence_rate(dxs, error, direction, plot):
     """Compute and plot the convergence rate given the resinement path `dxs` and errors in
@@ -232,12 +325,16 @@ def convergence_rate(dxs, error, direction, plot):
     p = np.polyfit(np.log10(dxs), np.log10(errors), 1)
 
     if plot:
-        wind_direction = {0 : "north", 90 : "east", 180 : "south", 270 : "west"}
+        wind_direction = {0: "north", 90: "east", 180: "south", 270: "west"}
 
         plt.figure()
-        plt.title("Precipitation errors (wind direction: {})".format(wind_direction[direction]))
+        plt.title(
+            "Precipitation errors (wind direction: {})".format(
+                wind_direction[direction]
+            )
+        )
         log_fit_plot(dxs, p, "polynomial fit (dx^{:1.4})".format(p[0]))
-        log_plot(dxs, errors, 'o', "errors")
+        log_plot(dxs, errors, "o", "errors")
         plt.legend()
         plt.grid()
         plt.xlabel("grid spacing (meters)")
@@ -246,28 +343,42 @@ def convergence_rate(dxs, error, direction, plot):
 
     return p[0]
 
+
 def ltop_test(plot=False):
     "Comparing to the 'triangle ridge' exact solution"
-    dxs = [2000, 1000, 500, 250]
+    dxs = [2000.0, 1000.0, 500.0, 250.0]
 
-    assert convergence_rate(dxs, max_error,   0, plot) > 1.9
-    assert convergence_rate(dxs, max_error,  90, plot) > 1.9
+    assert convergence_rate(dxs, max_error, 0, plot) > 1.9
+    assert convergence_rate(dxs, max_error, 90, plot) > 1.9
     assert convergence_rate(dxs, max_error, 180, plot) > 1.9
     assert convergence_rate(dxs, max_error, 270, plot) > 1.9
 
-def gaussian_bump(xmin, xmax, ymin, ymax, dx, dy, h_max=500.0,
-                  x0=-25e3, y0=0.0, sigma_x=15e3, sigma_y=15e3):
+
+def gaussian_bump(
+    xmin,
+    xmax,
+    ymin,
+    ymax,
+    dx,
+    dy,
+    h_max=500.0,
+    x0=-25e3,
+    y0=0.0,
+    sigma_x=15e3,
+    sigma_y=15e3,
+):
     "Create the setup needed to reproduce Fig 4c in SB2004"
     # Reproduce Fig 4c in SB2004
     x = np.arange(xmin, xmax, dx)
     y = np.arange(ymin, ymax, dy)
     X, Y = np.meshgrid(x, y)
-    Orography = h_max * np.exp(-(((X - x0)**2 / (2 * sigma_x**2)) +
-                                 ((Y - y0)**2 / (2 * sigma_y**2))))
+    Orography = h_max * np.exp(
+        -(((X - x0) ** 2 / (2 * sigma_x**2)) + ((Y - y0) ** 2 / (2 * sigma_y**2)))
+    )
     return X, Y, Orography
 
+
 if __name__ == "__main__":
-    import pylab as plt
 
     def log_plot(x, y, style, label):
         plt.plot(np.log10(x), np.log10(y), style, label=label)

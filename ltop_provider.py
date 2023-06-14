@@ -22,25 +22,29 @@
  ***************************************************************************/
 """
 
-__author__ = 'Andy Aschwanden and Constantine Khrulev'
-__date__ = '2018-05-02'
-__copyright__ = '(C) 2018-2020 by Andy Aschwanden and Constantine Khrulev'
+__author__ = "Andy Aschwanden and Constantine Khrulev"
+__date__ = "2018-05-02"
+__copyright__ = "(C) 2018-2020 by Andy Aschwanden and Constantine Khrulev"
 
 # This will get replaced with a git SHA1 when you do a git archive
 
-__revision__ = '$Format:%H$'
+__revision__ = "$Format:%H$"
 
 from qgis.core import QgsProcessingProvider
+
 from .ltop_precipitation import LTOrographicPrecipitationAlgorithm
 from .ltop_test_dem import LTOrographicPrecipitationTestInput
 
-class LTOrographicPrecipitationProvider(QgsProcessingProvider):
 
+class LTOrographicPrecipitationProvider(QgsProcessingProvider):
     def __init__(self):
         QgsProcessingProvider.__init__(self)
 
         # Load algorithms
-        self.alglist = [LTOrographicPrecipitationAlgorithm(), LTOrographicPrecipitationTestInput()]
+        self.alglist = [
+            LTOrographicPrecipitationAlgorithm(),
+            LTOrographicPrecipitationTestInput(),
+        ]
 
     def unload(self):
         """
@@ -54,7 +58,7 @@ class LTOrographicPrecipitationProvider(QgsProcessingProvider):
         Loads all algorithms belonging to this provider.
         """
         for alg in self.alglist:
-            self.addAlgorithm( alg )
+            self.addAlgorithm(alg)
 
     def id(self):
         """
@@ -62,7 +66,7 @@ class LTOrographicPrecipitationProvider(QgsProcessingProvider):
         string should be a unique, short, character only string, eg "qgis" or
         "gdal". This string should not be localised.
         """
-        return 'ltop'
+        return "ltop"
 
     def name(self):
         """
@@ -71,7 +75,7 @@ class LTOrographicPrecipitationProvider(QgsProcessingProvider):
 
         This string should be short (e.g. "Lastools") and localised.
         """
-        return self.tr('Linear Theory Orographic Precipitation')
+        return self.tr("Linear Theory Orographic Precipitation")
 
     def longName(self):
         """
